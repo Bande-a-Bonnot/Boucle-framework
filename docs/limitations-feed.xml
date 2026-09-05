@@ -7,6 +7,14 @@
   <updated>2026-09-05T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[HIGH] claude-security scan-changes can analyze the wrong diff content.</title>
+    <id>https://framework.boucle.sh/limitations.html#claude-security-scan-changes-can-analyze-wrong-diff-content</id>
+    <link href="https://framework.boucle.sh/limitations.html#claude-security-scan-changes-can-analyze-wrong-diff-content"/>
+    <updated>2026-09-05T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.259 Windows claude-security `scan-changes` run recorded the intended merge-base and head commit in `scan-meta.json`, but its inventory and research output repeatedly analyzed unrelated CI workflow files from outside the requested range. A retry with a fresh report directory and workflow run id reproduced the same wrong result, while a plain `git diff --numstat &lt;merge-base&gt;..&lt;HEAD&gt;` showed the actual range touched application and test files instead. Security-review output can therefore look tied to the correct revision pair while its conclusions, hot-file list, and component-change claims come from different content.</summary>
+    <category term="MCP &amp; plugin issues"/>
+  </entry>
+  <entry>
     <title>[HIGH] Cowork network allowlists can ignore user sandbox settings.</title>
     <id>https://framework.boucle.sh/limitations.html#cowork-network-allowlist-can-ignore-user-sandbox-settings</id>
     <link href="https://framework.boucle.sh/limitations.html#cowork-network-allowlist-can-ignore-user-sandbox-settings"/>
@@ -157,13 +165,5 @@
     <updated>2026-09-05T00:00:00Z</updated>
     <summary>Reported Claude Code 2.1.257 through 2.1.260-era regressions show that when a `Read(...)` deny rule is configured, ordinary Bash search commands can trigger a manual approval prompt even when the searched files do not match the denied pattern. Repros include `cd DIR &amp;&amp; grep ... relative/path`, `grep -r` or `rg` with include filters that exclude `.env`, and background subagents running in `bypassPermissions` or auto mode. One report traced the arming condition to the existence of any `Read(...)` deny rule, so server-managed secret rules for `.env`, `*.pem`, or `id_rsa` could gate unrelated relative test-file reads that could not match those patterns. A later 2.1.260 report narrowed one live trigger to leading-`./` root-file rules: `Read(./.env)` made `grep -rl pattern .` prompt, while `Read(.env)` still denied direct `.env` reads but let the root recursive search run. The prompt is described as bypass-immune and classifier-unroutable in public confirmations, so unattended agents can stall waiting for a human even though the command is read-only and the session was configured to avoid prompts.</summary>
     <category term="Permission system"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Plugin hook entrypoints can hide WSL binary misrouting.</title>
-    <id>https://framework.boucle.sh/limitations.html#plugin-hook-entrypoints-can-hide-wsl-binary-misrouting</id>
-    <link href="https://framework.boucle.sh/limitations.html#plugin-hook-entrypoints-can-hide-wsl-binary-misrouting"/>
-    <updated>2026-09-05T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.259 WSL2 setup found the Semgrep Guardian plugin denying `Edit`, `Write`, and some supply-chain-looking `Bash` calls as if the user were not logged in, while the local Guardian credential still had a future expiry. The report traces the failure to the plugin&#x27;s registered hook command: `hooks/hooks.json` points at an extensionless `scripts/hook` wrapper, and on WSL that wrapper executes the Windows `hook.exe` instead of the Linux binary that can lock the Linux-side Guardian settings file. The older public workaround edited `scripts/hook.sh`, but that companion file is no longer registered, so applying the documented patch can appear to succeed while changing no runtime behavior.</summary>
-    <category term="MCP &amp; plugin issues"/>
   </entry>
 </feed>
