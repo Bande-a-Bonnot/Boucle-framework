@@ -7,6 +7,14 @@
   <updated>2026-09-05T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[HIGH] Bash allow rules can miss in-project absolute script paths.</title>
+    <id>https://framework.boucle.sh/limitations.html#bash-allow-rules-do-not-normalize-in-project-absolute-paths</id>
+    <link href="https://framework.boucle.sh/limitations.html#bash-allow-rules-do-not-normalize-in-project-absolute-paths"/>
+    <updated>2026-09-05T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.258 macOS VS Code setup found that a project-level permission rule such as `Bash(.claude/scripts/*)` allowed the project-relative script invocation but prompted again when the same script was invoked by its absolute path under the same project root. The PermissionRequest hook then suggested an absolute, machine-specific `Bash(/path/to/project/.claude/scripts/hello *)` rule with a local-settings destination, pushing a team-shareable rule into personal settings drift. Agents and subagents often choose absolute paths when uncertain about the current directory, so a committed allowlist can look correct while still generating prompts or local grants for equivalent in-project commands.</summary>
+    <category term="Permission system"/>
+  </entry>
+  <entry>
     <title>[HIGH] Homebrew Bash heredocs can deadlock and truncate target files on macOS.</title>
     <id>https://framework.boucle.sh/limitations.html#homebrew-bash-heredocs-can-deadlock-and-truncate-targets</id>
     <link href="https://framework.boucle.sh/limitations.html#homebrew-bash-heredocs-can-deadlock-and-truncate-targets"/>
@@ -157,13 +165,5 @@
     <updated>2026-09-05T00:00:00Z</updated>
     <summary>A reported Claude Code macOS auto-mode session allowed a `gh api graphql` call that updated a GitHub ProjectV2 iteration field by submitting only the newly requested sprint in `iterationConfiguration.iterations`. GitHub treats that list as replacement state, so the mutation removed 12 completed iterations and detached roughly 450 item-to-sprint assignments from historical project data. The same auto-mode classifier then denied the inverse restore call carrying the full iteration list, leaving manual shell execution as the only repair path. This creates a dangerous asymmetry: a shared-resource mutation with list-replacement semantics can pass as routine GitHub CLI use, while the matching recovery operation is treated as too risky after damage has already landed.</summary>
     <category term="Autonomy &amp; destructive actions"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Cowork workspace tool allow rules can be cancelled by built-in deny aliases.</title>
-    <id>https://framework.boucle.sh/limitations.html#cowork-workspace-tool-allow-rules-can-be-cancelled-by-built-in-deny-aliases</id>
-    <link href="https://framework.boucle.sh/limitations.html#cowork-workspace-tool-allow-rules-can-be-cancelled-by-built-in-deny-aliases"/>
-    <updated>2026-09-05T00:00:00Z</updated>
-    <summary>A reported Claude Desktop 1.44121.1.0 Windows Cowork session found `mcp__workspace__bash` and `mcp__workspace__web_fetch` permanently denied even though the workspace MCP server was connected and `mcp__workspace__bash` appeared in the spawned child&#x27;s `--allowedTools` list. The same spawn command also passed built-in `Bash` and `WebFetch` names in `--disallowedTools`, and the reporter found an alias map that expands those built-in names onto the workspace tool ids. Because deny rules outrank allow rules, the local-shell denial intended to keep execution inside the workspace sandbox can also deny the workspace sandbox tools themselves, leaving Cowork with no prompt, no usable remediation through normal settings, and only a rule-level permission_denied record.</summary>
-    <category term="Permission system"/>
   </entry>
 </feed>
