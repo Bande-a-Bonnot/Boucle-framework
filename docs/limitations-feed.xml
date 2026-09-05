@@ -7,6 +7,14 @@
   <updated>2026-09-05T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[MEDIUM] Bash permission-denied messages can hide command and rule context.</title>
+    <id>https://framework.boucle.sh/limitations.html#bash-permission-denials-can-hide-command-and-rule-context</id>
+    <link href="https://framework.boucle.sh/limitations.html#bash-permission-denials-can-hide-command-and-rule-context"/>
+    <updated>2026-09-05T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.260 macOS setup found that when a `permissions.deny` rule blocked a multi-stage Bash command, the denial shown to the model often quoted only a sub-command excerpt rather than the full command that was issued. The same message did not identify the matching deny rule or the settings file where it came from. In real daily use, this reportedly caused the model and human readers to misattribute the block to another control, such as a classifier or `PreToolUse` hook, before later tracing it to a Read deny rule being applied through Bash-recognized file commands.</summary>
+    <category term="Permission system"/>
+  </entry>
+  <entry>
     <title>[HIGH] Plugin cache updates can replicate untracked files across versions.</title>
     <id>https://framework.boucle.sh/limitations.html#plugin-cache-can-replicate-untracked-files-across-versions</id>
     <link href="https://framework.boucle.sh/limitations.html#plugin-cache-can-replicate-untracked-files-across-versions"/>
@@ -157,13 +165,5 @@
     <updated>2026-09-05T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.255 macOS sandbox setup found that a template-less `mktemp -d` failed under the Bash tool because BSD `mktemp` chose the Darwin per-user temp directory instead of Claude Code&#x27;s sandboxed `$TMPDIR`. The failed command substitution left the scratch variable empty, `cd &quot;&quot; &amp;&amp; pwd -P` then resolved it to the working directory, and a later bare `rm -rf &quot;$T&quot;` ran against that directory without a recorded critical-path prompt. The reporter saw large local repo damage before the default Bash timeout stopped the tool result, while protected `.git` paths and deny rules limited part of the blast radius.</summary>
     <category term="Sandbox &amp; permissions"/>
-  </entry>
-  <entry>
-    <title>[HIGH] OTLP telemetry can export tool arguments despite `OTEL_LOG_TOOL_*` flags.</title>
-    <id>https://framework.boucle.sh/limitations.html#otel-tool-arguments-exported-despite-tool-content-flags</id>
-    <link href="https://framework.boucle.sh/limitations.html#otel-tool-arguments-exported-despite-tool-content-flags"/>
-    <updated>2026-09-05T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.259 macOS setup, also observed on 2.1.252 and 2.1.258, found full Bash command text reaching an OTLP collector even when tool-content-looking flags were unset, set to `0`, or set to `false`. The reporter planted a canary in a Bash command and found it in `tool_decision` `tool_parameters`, `tool_result` `tool_parameters`, and `tool_result` `tool_input`, with `user.email` attached on the same events. The issue is not a model echo path: the canary appeared in tool telemetry attributes, so teams sending Claude Code telemetry directly to a vendor endpoint may export shell commands and user identifiers while believing `OTEL_LOG_TOOL_*` settings suppress tool content.</summary>
-    <category term="Telemetry &amp; privacy"/>
   </entry>
 </feed>
