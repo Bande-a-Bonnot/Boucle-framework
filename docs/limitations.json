@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 1898,
+  "count": 1899,
   "categories": {
     "Hook behavior & events": 242,
     "Permission system": 173,
@@ -11,7 +11,7 @@
     "Security & trust boundaries": 49,
     "TUI & display": 41,
     "Cowork & remote": 40,
-    "Sandbox & permissions": 38,
+    "Sandbox & permissions": 39,
     "Configuration behavior": 36,
     "Platform & compatibility": 35,
     "Context & memory": 34,
@@ -196,12 +196,38 @@
     "worktree-isolation": 1
   },
   "severity_counts": {
-    "CRITICAL": 171,
+    "CRITICAL": 172,
     "HIGH": 1108,
     "LOW": 110,
     "MEDIUM": 509
   },
   "entries": [
+    {
+      "id": "malformed-sandbox-deny-list-can-disable-deny-rules-and-hooks",
+      "title": "Malformed sandbox deny-list entries can disable deny rules and hooks.",
+      "category": "Sandbox & permissions",
+      "severity": "CRITICAL",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/92365"
+      ],
+      "date_added": "2026-09-05",
+      "description": "A reported Claude Code 2.1.261 Linux WSL2 repro found that putting a non-string value inside `sandbox.filesystem.denyRead` or `sandbox.filesystem.denyWrite`, such as `{ \"path\": \"/abs/path\" }` or `42`, made the CLI accept the settings file, exit zero, and print no warning while applying neither `permissions.deny` nor `PreToolUse` hooks for the run. The same file enforced correctly when the deny-list entry was a string, and deleting the `sandbox` key entirely restored the deny rule and hook path. A settings block that appears to add sandbox restrictions can therefore make the session less restrictive than omitting the block, including allowing a denied `Read` to return covered file contents to the model while the hook witness file proves the hook never ran.",
+      "workaround": "Validate `sandbox.filesystem.denyRead` and `sandbox.filesystem.denyWrite` as arrays of strings before passing settings to Claude Code, and fail closed if a generator or manual edit emits objects, numbers, nulls, or mixed types there. After any sandbox settings change, start a fresh session with `--setting-sources ''` where possible and run negative canaries for both a `permissions.deny` rule and a matched `PreToolUse` hook; confirm the hook witness fires and the denied operation does not run. Keep credential and destructive-action boundaries outside Claude Code as well, such as OS permissions, wrapper scripts, and external secret stores, until the installed version proves malformed sandbox values cannot weaken unrelated permission or hook enforcement.",
+      "tags": [
+        "linux",
+        "wsl2",
+        "sandbox",
+        "settings",
+        "settings-json",
+        "denyread",
+        "denywrite",
+        "permissions-deny",
+        "pretooluse",
+        "hooks",
+        "fail-open"
+      ]
+    },
     {
       "id": "permissions-editor-can-drop-lowercase-tool-rules",
       "title": "/permissions can drop lowercase tool-name rules while adding unrelated rules.",
@@ -25929,27 +25955,27 @@
     }
   ],
   "status_summary": {
-    "open": 1884,
+    "open": 1885,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
-    "critical": 171,
+    "critical": 172,
     "high": 1108,
     "low": 110,
     "medium": 509
   },
   "lastUpdated": "2026-09-05",
   "stats": {
-    "total": 1898,
-    "critical": 171,
+    "total": 1899,
+    "critical": 172,
     "high": 1108,
     "medium": 509,
     "low": 110,
-    "open": 1884,
+    "open": 1885,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-09-05",
-  "total": 1898
+  "total": 1899
 }
