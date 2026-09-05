@@ -1,12 +1,12 @@
 {
   "version": "0.13.0",
-  "count": 1888,
+  "count": 1889,
   "categories": {
     "Hook behavior & events": 242,
     "Permission system": 171,
     "MCP & plugin issues": 117,
     "Hook bypass & evasion": 109,
-    "Subagent & spawned agents": 86,
+    "Subagent & spawned agents": 87,
     "Desktop & IDE integration": 64,
     "Security & trust boundaries": 48,
     "TUI & display": 41,
@@ -197,11 +197,34 @@
   },
   "severity_counts": {
     "CRITICAL": 171,
-    "HIGH": 1100,
+    "HIGH": 1101,
     "LOW": 110,
     "MEDIUM": 507
   },
   "entries": [
+    {
+      "id": "nested-agent-type-allowlists-can-be-ignored",
+      "title": "Nested `Agent(type)` allowlists can be ignored in subagent definitions.",
+      "category": "Subagent & spawned agents",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/92259"
+      ],
+      "date_added": "2026-09-05",
+      "description": "A reported Claude Code 2.1.259 macOS repro found that a custom subagent definition with `tools: [\"Read\", \"Agent(inner)\"]` could still spawn a sibling subagent type named `other`. The same `Agent(inner)` allowlist was honored when applied to the main thread, and a session-wide `permissions.deny: [\"Agent(other)\"]` did block the nested spawn, so the denial path reached nested agent calls while the per-subagent allowlist did not. Orchestrator-style agents can therefore appear to have a constrained fan-out surface while still being able to spawn any available subagent type allowed by broader session policy and depth limits.",
+      "workaround": "Do not rely on `Agent(type)` entries inside subagent `tools` frontmatter as the only containment for nested spawning until your installed Claude Code version proves the allowlist is enforced there. Add a `PreToolUse` hook for the Agent tool or a session/project deny rule that checks both the caller agent type and requested subagent type, then run a canary where the nested agent attempts one allowed and one denied spawn. For sensitive workflows, keep high-privilege agent types unavailable to orchestrators by default, use parent-side rosters for expected descendants, and review transcripts for unexpected `Agent{subagent_type: ...}` calls before trusting delegated output.",
+      "tags": [
+        "macos",
+        "agents",
+        "subagents",
+        "permissions",
+        "allowlist",
+        "agent-tool",
+        "frontmatter",
+        "orchestration"
+      ]
+    },
     {
       "id": "explicit-default-claude-config-dir-can-select-empty-keychain-store",
       "title": "Explicit default `CLAUDE_CONFIG_DIR` can select an empty Keychain store.",
@@ -25684,27 +25707,27 @@
     }
   ],
   "status_summary": {
-    "open": 1874,
+    "open": 1875,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 171,
-    "high": 1100,
+    "high": 1101,
     "low": 110,
     "medium": 507
   },
   "lastUpdated": "2026-09-05",
   "stats": {
-    "total": 1888,
+    "total": 1889,
     "critical": 171,
-    "high": 1100,
+    "high": 1101,
     "medium": 507,
     "low": 110,
-    "open": 1874,
+    "open": 1875,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-09-05",
-  "total": 1888
+  "total": 1889
 }
