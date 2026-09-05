@@ -7,6 +7,14 @@
   <updated>2026-09-05T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[HIGH] Cowork network allowlists can ignore user sandbox settings.</title>
+    <id>https://framework.boucle.sh/limitations.html#cowork-network-allowlist-can-ignore-user-sandbox-settings</id>
+    <link href="https://framework.boucle.sh/limitations.html#cowork-network-allowlist-can-ignore-user-sandbox-settings"/>
+    <updated>2026-09-05T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.260 macOS Cowork setup found that changing `sandbox.enabled` and `sandbox.network.allowedDomains` in `~/.claude/settings.json` did not affect egress from the Cowork Linux sandbox. The same curl probe kept allowing only platform-default domains such as `registry.npmjs.org` while blocking user-added domains with a proxy `blocked-by-allowlist` response, and setting `sandbox.enabled: false` did not lift the Cowork restriction. The reporter observed an in-sandbox proxy and root-owned `/etc/srt-settings.base.json` policy that appeared separate from the user&#x27;s Claude settings, so local CLI sandbox configuration can look authoritative while Cowork uses a fixed remote/platform allowlist.</summary>
+    <category term="Cowork &amp; remote"/>
+  </entry>
+  <entry>
     <title>[HIGH] CLI plugin uninstall can leave orphaned background security hooks.</title>
     <id>https://framework.boucle.sh/limitations.html#cli-plugin-uninstall-can-leave-orphaned-background-security-hooks</id>
     <link href="https://framework.boucle.sh/limitations.html#cli-plugin-uninstall-can-leave-orphaned-background-security-hooks"/>
@@ -157,13 +165,5 @@
     <updated>2026-09-05T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.259 WSL2 setup found the Semgrep Guardian plugin denying `Edit`, `Write`, and some supply-chain-looking `Bash` calls as if the user were not logged in, while the local Guardian credential still had a future expiry. The report traces the failure to the plugin&#x27;s registered hook command: `hooks/hooks.json` points at an extensionless `scripts/hook` wrapper, and on WSL that wrapper executes the Windows `hook.exe` instead of the Linux binary that can lock the Linux-side Guardian settings file. The older public workaround edited `scripts/hook.sh`, but that companion file is no longer registered, so applying the documented patch can appear to succeed while changing no runtime behavior.</summary>
     <category term="MCP &amp; plugin issues"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Desktop can render a stale transcript branch while newer history remains on disk.</title>
-    <id>https://framework.boucle.sh/limitations.html#desktop-can-render-stale-transcript-branch</id>
-    <link href="https://framework.boucle.sh/limitations.html#desktop-can-render-stale-transcript-branch"/>
-    <updated>2026-09-05T00:00:00Z</updated>
-    <summary>A reported Claude Desktop 1.46388.3 macOS Code-tab session found that the app rendered conversation history only through an older date even though the session JSONL contained tens of thousands of newer entries from later days. The reporter checked `uuid` and `parentUuid` links and found an intact parent chain, but the transcript file had become a forest with multiple roots and many leaves after `/compact` and resumes. In the affected session, the branch containing the newest message was smaller than an older branch, and the UI stopped exactly where the older largest branch ended. If the renderer selects a largest or arbitrary old branch instead of the most recent branch, users can see what looks like deleted work while the data is still present in `~/.claude/projects/&lt;project&gt;/&lt;session-id&gt;.jsonl`.</summary>
-    <category term="Data integrity"/>
   </entry>
 </feed>
