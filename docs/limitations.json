@@ -1,9 +1,9 @@
 {
   "version": "0.13.0",
-  "count": 1897,
+  "count": 1898,
   "categories": {
     "Hook behavior & events": 242,
-    "Permission system": 172,
+    "Permission system": 173,
     "MCP & plugin issues": 119,
     "Hook bypass & evasion": 109,
     "Subagent & spawned agents": 87,
@@ -197,11 +197,35 @@
   },
   "severity_counts": {
     "CRITICAL": 171,
-    "HIGH": 1107,
+    "HIGH": 1108,
     "LOW": 110,
     "MEDIUM": 509
   },
   "entries": [
+    {
+      "id": "permissions-editor-can-drop-lowercase-tool-rules",
+      "title": "/permissions can drop lowercase tool-name rules while adding unrelated rules.",
+      "category": "Permission system",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/92350"
+      ],
+      "date_added": "2026-09-05",
+      "description": "A reported Claude Code 2.1.261 macOS project-level settings file had existing `permissions.ask` and `permissions.deny` rules written with lowercase tool names such as `bash(git push *)` and `bash(rm -rf *)`. After the user opened `/permissions` and added an unrelated correctly cased `Bash(...)` rule, Claude Code rewrote `.claude/settings.json` with the new rule but silently removed the pre-existing lowercase ask and deny entries. The narrow risk is not only that lowercase rules may be invalid: the discoverable permissions editor can turn a validation problem into silent policy data loss, including loss of a dangerous-command deny rule, without warning, confirmation, or an audit log.",
+      "workaround": "Treat `/permissions` edits as settings rewrites, not append-only changes. Before and after adding rules through the TUI, diff `.claude/settings.json` and preserve any existing ask, deny, or allow entries that the editor might not understand. Normalize tool-name casing to the documented forms before relying on rules, then start a fresh session and run harmless positive and negative canaries for every critical permission pattern. For managed or shared projects, review permission-file changes like code changes and keep OS permissions, hooks, or wrapper scripts around commands that must remain blocked even if Claude Code drops a settings entry.",
+      "tags": [
+        "macos",
+        "permissions",
+        "settings",
+        "settings-json",
+        "lowercase",
+        "tool-names",
+        "deny-rules",
+        "ask-rules",
+        "data-loss"
+      ]
+    },
     {
       "id": "trusted-context-wrapper-can-mimic-prompt-injection",
       "title": "Trusted context wrappers can mimic prompt-injection language.",
@@ -25905,27 +25929,27 @@
     }
   ],
   "status_summary": {
-    "open": 1883,
+    "open": 1884,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 171,
-    "high": 1107,
+    "high": 1108,
     "low": 110,
     "medium": 509
   },
   "lastUpdated": "2026-09-05",
   "stats": {
-    "total": 1897,
+    "total": 1898,
     "critical": 171,
-    "high": 1107,
+    "high": 1108,
     "medium": 509,
     "low": 110,
-    "open": 1883,
+    "open": 1884,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-09-05",
-  "total": 1897
+  "total": 1898
 }
