@@ -7,6 +7,14 @@
   <updated>2026-09-05T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[HIGH] /permissions can drop lowercase tool-name rules while adding unrelated rules.</title>
+    <id>https://framework.boucle.sh/limitations.html#permissions-editor-can-drop-lowercase-tool-rules</id>
+    <link href="https://framework.boucle.sh/limitations.html#permissions-editor-can-drop-lowercase-tool-rules"/>
+    <updated>2026-09-05T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.261 macOS project-level settings file had existing `permissions.ask` and `permissions.deny` rules written with lowercase tool names such as `bash(git push *)` and `bash(rm -rf *)`. After the user opened `/permissions` and added an unrelated correctly cased `Bash(...)` rule, Claude Code rewrote `.claude/settings.json` with the new rule but silently removed the pre-existing lowercase ask and deny entries. The narrow risk is not only that lowercase rules may be invalid: the discoverable permissions editor can turn a validation problem into silent policy data loss, including loss of a dangerous-command deny rule, without warning, confirmation, or an audit log.</summary>
+    <category term="Permission system"/>
+  </entry>
+  <entry>
     <title>[MEDIUM] Trusted context wrappers can mimic prompt-injection language.</title>
     <id>https://framework.boucle.sh/limitations.html#trusted-context-wrapper-can-mimic-prompt-injection</id>
     <link href="https://framework.boucle.sh/limitations.html#trusted-context-wrapper-can-mimic-prompt-injection"/>
@@ -157,13 +165,5 @@
     <updated>2026-09-05T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.260 Windows CLI session using a custom Anthropic-compatible endpoint showed Plan Mode active through both `/plan` and Shift+Tab, while a direct `Write` tool call still ran before any accepted plan, permission prompt, `EnterPlanMode`, or `ExitPlanMode` transition. The reporter verified the target file changed outside Claude Code with PowerShell. An older 2.1.65 observation under `permissions.defaultMode: &quot;plan&quot;` also showed `No plan found` before execution continued, but that transcript is no longer available. The official Anthropic endpoint is not yet confirmed, so the root cause may be client enforcement, endpoint compatibility, or an interaction between them. The user-facing risk is still concrete: Plan Mode UI state and injected instructions are not enough proof that mutating tools are blocked in that launch path.</summary>
     <category term="Plan mode"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Auto mode denials can compound and block approved repair steps.</title>
-    <id>https://framework.boucle.sh/limitations.html#auto-mode-denials-can-compound-and-block-approved-repairs</id>
-    <link href="https://framework.boucle.sh/limitations.html#auto-mode-denials-can-compound-and-block-approved-repairs"/>
-    <updated>2026-09-05T00:00:00Z</updated>
-    <summary>Reported Claude Code auto-mode sessions show the classifier blocking later actions after an earlier denial in the same conversation, even when the later action was explicitly authorized by the user or was read-only inspection. One Linux aarch64 report describes an initially denied read-only production SQLite query over SSH, followed later by denial of the project&#x27;s own deploy script after tests and backup, denial of the user&#x27;s request to add a narrow Bash allow rule, and denial of reading `~/.claude/settings.json` to inspect the active permissions. A separate macOS report saw `gh pr merge` denied after an explicit merge instruction, then a read-only `gh search issues` command denied with the same generic classifier reason. The result is a recovery trap: the classifier blocks the operation, the suggested permission-rule repair, and sometimes the evidence-gathering step needed to diagnose it.</summary>
-    <category term="Permission system"/>
   </entry>
 </feed>
