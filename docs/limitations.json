@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 1889,
+  "count": 1890,
   "categories": {
     "Hook behavior & events": 242,
     "Permission system": 171,
@@ -23,8 +23,8 @@
     "VS Code extension": 26,
     "Tool behavior": 24,
     "Agents & subagents": 23,
+    "Bash & shell execution": 21,
     "Core & session management": 21,
-    "Bash & shell execution": 20,
     "Permissions & safety": 20,
     "Remote & cloud": 19,
     "Scheduling & remote triggers": 19,
@@ -197,11 +197,35 @@
   },
   "severity_counts": {
     "CRITICAL": 171,
-    "HIGH": 1101,
+    "HIGH": 1102,
     "LOW": 110,
     "MEDIUM": 507
   },
   "entries": [
+    {
+      "id": "homebrew-bash-heredocs-can-deadlock-and-truncate-targets",
+      "title": "Homebrew Bash heredocs can deadlock and truncate target files on macOS.",
+      "category": "Bash & shell execution",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/92262"
+      ],
+      "date_added": "2026-09-05",
+      "description": "A reported Claude Code 2.1.260 macOS setup found that Bash-tool heredoc file writes can hang until the 120 second timeout and leave the redirected target as a zero-byte file when PATH resolves `bash` to Homebrew Bash 5.1 or newer. The underlying shell behavior is a Bash heredoc pipe deadlock on macOS's small pipe capacity for bodies above about 512 bytes and below 65536 bytes, but Claude Code amplifies it by using the PATH-selected Bash interpreter and by truncating the target before the heredoc body is successfully delivered. Auto and bypass-permissions modes are especially exposed when their prompt guidance steers routine file writes through `cat <<EOF` instead of the dedicated Write tool.",
+      "workaround": "On macOS machines with Homebrew Bash in PATH, avoid Bash-tool redirected heredocs for file writes in the affected middle-size range, especially against existing files. Prefer the dedicated Write/Edit tools, write to a temporary path and atomically rename only after verifying non-empty content, or force an unaffected shell such as `/bin/bash` where appropriate. If a session must use Homebrew Bash, test whether `shopt -s compat44` avoids the pipe path on the installed version, then keep external backups or git checkpoints before shell-authored rewrites. Add hooks or wrapper checks that flag `cat > file <<...` and similar redirect-plus-heredoc forms in auto or bypass workflows.",
+      "tags": [
+        "macos",
+        "bash",
+        "homebrew",
+        "heredoc",
+        "file-writes",
+        "data-loss",
+        "timeouts",
+        "auto-mode",
+        "bypass-permissions"
+      ]
+    },
     {
       "id": "nested-agent-type-allowlists-can-be-ignored",
       "title": "Nested `Agent(type)` allowlists can be ignored in subagent definitions.",
@@ -25707,27 +25731,27 @@
     }
   ],
   "status_summary": {
-    "open": 1875,
+    "open": 1876,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 171,
-    "high": 1101,
+    "high": 1102,
     "low": 110,
     "medium": 507
   },
   "lastUpdated": "2026-09-05",
   "stats": {
-    "total": 1889,
+    "total": 1890,
     "critical": 171,
-    "high": 1101,
+    "high": 1102,
     "medium": 507,
     "low": 110,
-    "open": 1875,
+    "open": 1876,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-09-05",
-  "total": 1889
+  "total": 1890
 }
