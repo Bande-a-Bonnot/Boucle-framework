@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 1887,
+  "count": 1888,
   "categories": {
     "Hook behavior & events": 242,
     "Permission system": 171,
@@ -19,8 +19,8 @@
     "MCP & integrations": 31,
     "Data integrity": 30,
     "Performance & cost": 28,
+    "Auth & accounts": 26,
     "VS Code extension": 26,
-    "Auth & accounts": 25,
     "Tool behavior": 24,
     "Agents & subagents": 23,
     "Core & session management": 21,
@@ -197,11 +197,33 @@
   },
   "severity_counts": {
     "CRITICAL": 171,
-    "HIGH": 1099,
+    "HIGH": 1100,
     "LOW": 110,
     "MEDIUM": 507
   },
   "entries": [
+    {
+      "id": "explicit-default-claude-config-dir-can-select-empty-keychain-store",
+      "title": "Explicit default `CLAUDE_CONFIG_DIR` can select an empty Keychain store.",
+      "category": "Auth & accounts",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/92252"
+      ],
+      "date_added": "2026-09-05",
+      "description": "A reported Claude Code 2.1.261 macOS setup found that leaving `CLAUDE_CONFIG_DIR` unset and setting it explicitly to the byte-identical default path `$HOME/.claude` can consult different macOS Keychain credential entries. In the repro, ordinary `claude auth status` reported a valid Claude.ai login, while `CLAUDE_CONFIG_DIR=\"$HOME/.claude\" claude auth status` reported `loggedIn: false` with no diagnostic naming the credential store that had been consulted. Automation that defensively forwards a resolved config directory to child Claude processes can therefore turn a logged-in parent process into an unauthenticated child even though the filesystem path did not actually change.",
+      "workaround": "When spawning Claude Code child processes on macOS, preserve the distinction between an unset `CLAUDE_CONFIG_DIR` and an explicitly configured alternate profile. Do not normalize an absent variable into `$HOME/.claude` unless the child is meant to use a separate credential slot. Before unattended work, run `claude auth status` both with the exact launch environment and with any wrapper-provided config variables, and record whether identity fields disappear. If you must pin the default filesystem root explicitly, test whether setting `CLAUDE_SECURESTORAGE_CONFIG_DIR` to an empty value restores the expected Keychain slot on your installed version, then document that wrapper behavior so future cleanup does not reintroduce silent auth loss.",
+      "tags": [
+        "macos",
+        "auth",
+        "keychain",
+        "claude-config-dir",
+        "credentials",
+        "automation",
+        "environment"
+      ]
+    },
     {
       "id": "bash-permission-dialog-can-obscure-compound-command-risk",
       "title": "Bash permission dialogs can obscure compound command risk.",
@@ -25662,27 +25684,27 @@
     }
   ],
   "status_summary": {
-    "open": 1873,
+    "open": 1874,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 171,
-    "high": 1099,
+    "high": 1100,
     "low": 110,
     "medium": 507
   },
   "lastUpdated": "2026-09-05",
   "stats": {
-    "total": 1887,
+    "total": 1888,
     "critical": 171,
-    "high": 1099,
+    "high": 1100,
     "medium": 507,
     "low": 110,
-    "open": 1873,
+    "open": 1874,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-09-05",
-  "total": 1887
+  "total": 1888
 }
