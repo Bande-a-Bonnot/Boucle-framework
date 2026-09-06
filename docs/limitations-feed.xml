@@ -4,13 +4,21 @@
   <link href="https://framework.boucle.sh/limitations.html" rel="alternate"/>
   <link href="https://framework.boucle.sh/limitations-feed.xml" rel="self"/>
   <id>https://framework.boucle.sh/limitations-feed.xml</id>
-  <updated>2026-09-05T00:00:00Z</updated>
+  <updated>2026-09-06T00:00:00Z</updated>
   <author><name>Boucle</name></author>
+  <entry>
+    <title>[HIGH] Desktop Code tabs can disable SendMessage for subagents.</title>
+    <id>https://framework.boucle.sh/limitations.html#desktop-code-tabs-can-disable-sendmessage-for-subagents</id>
+    <link href="https://framework.boucle.sh/limitations.html#desktop-code-tabs-can-disable-sendmessage-for-subagents"/>
+    <updated>2026-09-06T00:00:00Z</updated>
+    <summary>A reported Claude Desktop 1.46388.x regression found that Code-tab sessions can be launched with `--disallowedTools SendMessage`, removing the CLI-native `SendMessage` tool from the session and its subagents. The desktop replacement named in the denial path addresses desktop sessions by `session_id`, but the `Agent` tool still returns subagent IDs and instructs callers to resume them with `SendMessage`. Multiple reports across macOS and Windows traced the block to the Desktop app launch path rather than the standalone CLI, leaving affected multi-agent workflows unable to send follow-up instructions to already-running subagents or some peer sessions.</summary>
+    <category term="Agent orchestration"/>
+  </entry>
   <entry>
     <title>[MEDIUM] Bash permission-denied messages can hide command and rule context.</title>
     <id>https://framework.boucle.sh/limitations.html#bash-permission-denials-can-hide-command-and-rule-context</id>
     <link href="https://framework.boucle.sh/limitations.html#bash-permission-denials-can-hide-command-and-rule-context"/>
-    <updated>2026-09-05T00:00:00Z</updated>
+    <updated>2026-09-06T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.260 macOS setup found that when a `permissions.deny` rule blocked a multi-stage Bash command, the denial shown to the model often quoted only a sub-command excerpt rather than the full command that was issued. The same message did not identify the matching deny rule or the settings file where it came from. In real daily use, this reportedly caused the model and human readers to misattribute the block to another control, such as a classifier or `PreToolUse` hook, before later tracing it to a Read deny rule being applied through Bash-recognized file commands.</summary>
     <category term="Permission system"/>
   </entry>
@@ -18,7 +26,7 @@
     <title>[HIGH] Plugin cache updates can replicate untracked files across versions.</title>
     <id>https://framework.boucle.sh/limitations.html#plugin-cache-can-replicate-untracked-files-across-versions</id>
     <link href="https://framework.boucle.sh/limitations.html#plugin-cache-can-replicate-untracked-files-across-versions"/>
-    <updated>2026-09-05T00:00:00Z</updated>
+    <updated>2026-09-06T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.261 macOS plugin-cache repro found that when a marketplace plugin updated, the new version directory appeared to be seeded from the previous version directory before fetched content was overlaid. Untracked, gitignored, or session-written files under the old cache, including a stray `node_modules`, were copied into later version directories even though the plugin remote was clean and the plugin declared no hooks or install scripts. One once-written dependency tree reportedly expanded into 13 version directories and about 1.2 GB of retained cache data.</summary>
     <category term="MCP &amp; plugin issues"/>
   </entry>
@@ -26,7 +34,7 @@
     <title>[CRITICAL] Malformed sandbox deny-list entries can disable deny rules and hooks.</title>
     <id>https://framework.boucle.sh/limitations.html#malformed-sandbox-deny-list-can-disable-deny-rules-and-hooks</id>
     <link href="https://framework.boucle.sh/limitations.html#malformed-sandbox-deny-list-can-disable-deny-rules-and-hooks"/>
-    <updated>2026-09-05T00:00:00Z</updated>
+    <updated>2026-09-06T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.261 Linux WSL2 repro found that putting a non-string value inside `sandbox.filesystem.denyRead` or `sandbox.filesystem.denyWrite`, such as `{ &quot;path&quot;: &quot;/abs/path&quot; }` or `42`, made the CLI accept the settings file, exit zero, and print no warning while applying neither `permissions.deny` nor `PreToolUse` hooks for the run. The same file enforced correctly when the deny-list entry was a string, and deleting the `sandbox` key entirely restored the deny rule and hook path. A settings block that appears to add sandbox restrictions can therefore make the session less restrictive than omitting the block, including allowing a denied `Read` to return covered file contents to the model while the hook witness file proves the hook never ran.</summary>
     <category term="Sandbox &amp; permissions"/>
   </entry>
@@ -34,7 +42,7 @@
     <title>[HIGH] UserPromptSubmit hooks can be registered but never invoked in Windows Git Bash.</title>
     <id>https://framework.boucle.sh/limitations.html#userpromptsubmit-hooks-can-be-registered-but-never-invoked-in-windows-git-bash</id>
     <link href="https://framework.boucle.sh/limitations.html#userpromptsubmit-hooks-can-be-registered-but-never-invoked-in-windows-git-bash"/>
-    <updated>2026-09-05T00:00:00Z</updated>
+    <updated>2026-09-06T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.261 Windows Git Bash CLI setup showed a project `UserPromptSubmit` hook correctly listed by `/hooks`, loaded from `.claude/settings.json`, and passing a direct stdin-payload test with the expected exit 2 block behavior. In fresh interactive sessions, however, typed prompts containing a hardcoded-looking secret reached the model normally, appeared in the JSONL transcript as user messages, and produced assistant responses with token usage. A follow-up ruled out the older early-session race theory: sending an innocuous warm-up prompt first still left the second prompt unguarded. This makes prompt-time credential or policy hooks look installed and testable while real interactive submissions bypass them silently in that client environment.</summary>
     <category term="Hook behavior &amp; events"/>
   </entry>
@@ -42,7 +50,7 @@
     <title>[HIGH] /permissions can drop lowercase tool-name rules while adding unrelated rules.</title>
     <id>https://framework.boucle.sh/limitations.html#permissions-editor-can-drop-lowercase-tool-rules</id>
     <link href="https://framework.boucle.sh/limitations.html#permissions-editor-can-drop-lowercase-tool-rules"/>
-    <updated>2026-09-05T00:00:00Z</updated>
+    <updated>2026-09-06T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.261 macOS project-level settings file had existing `permissions.ask` and `permissions.deny` rules written with lowercase tool names such as `bash(git push *)` and `bash(rm -rf *)`. After the user opened `/permissions` and added an unrelated correctly cased `Bash(...)` rule, Claude Code rewrote `.claude/settings.json` with the new rule but silently removed the pre-existing lowercase ask and deny entries. The narrow risk is not only that lowercase rules may be invalid: the discoverable permissions editor can turn a validation problem into silent policy data loss, including loss of a dangerous-command deny rule, without warning, confirmation, or an audit log.</summary>
     <category term="Permission system"/>
   </entry>
@@ -50,7 +58,7 @@
     <title>[MEDIUM] Trusted context wrappers can mimic prompt-injection language.</title>
     <id>https://framework.boucle.sh/limitations.html#trusted-context-wrapper-can-mimic-prompt-injection</id>
     <link href="https://framework.boucle.sh/limitations.html#trusted-context-wrapper-can-mimic-prompt-injection"/>
-    <updated>2026-09-05T00:00:00Z</updated>
+    <updated>2026-09-06T00:00:00Z</updated>
     <summary>A reported Claude Code app update on 2026-09-05 wrapped `CLAUDE.md` and `MEMORY.md` loads in a system-reminder phrase saying the loaded instructions override defaults and must be followed exactly. The reporter found the exact wrapper in multiple same-day transcripts across unrelated projects and said no older transcript sample contained it. Because the wording uses the same authority-claim shape that users train agents to flag as prompt injection, a trusted harness-provided context load can look like attacker text, while real attacker text can look more familiar and therefore less suspicious.</summary>
     <category term="Security &amp; trust boundaries"/>
   </entry>
@@ -58,7 +66,7 @@
     <title>[HIGH] claude-security scan-changes can analyze the wrong diff content.</title>
     <id>https://framework.boucle.sh/limitations.html#claude-security-scan-changes-can-analyze-wrong-diff-content</id>
     <link href="https://framework.boucle.sh/limitations.html#claude-security-scan-changes-can-analyze-wrong-diff-content"/>
-    <updated>2026-09-05T00:00:00Z</updated>
+    <updated>2026-09-06T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.259 Windows claude-security `scan-changes` run recorded the intended merge-base and head commit in `scan-meta.json`, but its inventory and research output repeatedly analyzed unrelated CI workflow files from outside the requested range. A retry with a fresh report directory and workflow run id reproduced the same wrong result, while a plain `git diff --numstat &lt;merge-base&gt;..&lt;HEAD&gt;` showed the actual range touched application and test files instead. Security-review output can therefore look tied to the correct revision pair while its conclusions, hot-file list, and component-change claims come from different content.</summary>
     <category term="MCP &amp; plugin issues"/>
   </entry>
@@ -66,7 +74,7 @@
     <title>[HIGH] Cowork network allowlists can ignore user sandbox settings.</title>
     <id>https://framework.boucle.sh/limitations.html#cowork-network-allowlist-can-ignore-user-sandbox-settings</id>
     <link href="https://framework.boucle.sh/limitations.html#cowork-network-allowlist-can-ignore-user-sandbox-settings"/>
-    <updated>2026-09-05T00:00:00Z</updated>
+    <updated>2026-09-06T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.260 macOS Cowork setup found that changing `sandbox.enabled` and `sandbox.network.allowedDomains` in `~/.claude/settings.json` did not affect egress from the Cowork Linux sandbox. The same curl probe kept allowing only platform-default domains such as `registry.npmjs.org` while blocking user-added domains with a proxy `blocked-by-allowlist` response, and setting `sandbox.enabled: false` did not lift the Cowork restriction. The reporter observed an in-sandbox proxy and root-owned `/etc/srt-settings.base.json` policy that appeared separate from the user&#x27;s Claude settings, so local CLI sandbox configuration can look authoritative while Cowork uses a fixed remote/platform allowlist.</summary>
     <category term="Cowork &amp; remote"/>
   </entry>
@@ -74,7 +82,7 @@
     <title>[HIGH] CLI plugin uninstall can leave orphaned background security hooks.</title>
     <id>https://framework.boucle.sh/limitations.html#cli-plugin-uninstall-can-leave-orphaned-background-security-hooks</id>
     <link href="https://framework.boucle.sh/limitations.html#cli-plugin-uninstall-can-leave-orphaned-background-security-hooks"/>
-    <updated>2026-09-05T00:00:00Z</updated>
+    <updated>2026-09-06T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.209 Windows setup found that uninstalling the official `security-guidance` plugin from the CLI could leave an already queued background review hook pointing at a deleted session-local plugin directory. Subsequent unrelated sessions kept showing repeated background security-review notifications with a missing `security_reminder_hook.py` path, and the reporter later saw the desktop app become unresponsive with many Claude processes until forced closed. The narrower risk is that CLI uninstall and the in-app plugin registry can diverge, so a removed plugin may still drive cross-session notification and hook state.</summary>
     <category term="MCP &amp; plugin issues"/>
   </entry>
@@ -82,7 +90,7 @@
     <title>[MEDIUM] `--setting-sources` docs can hide what hooks, plugins, and memory are isolated.</title>
     <id>https://framework.boucle.sh/limitations.html#setting-sources-documentation-hides-hook-plugin-isolation-scope</id>
     <link href="https://framework.boucle.sh/limitations.html#setting-sources-documentation-hides-hook-plugin-isolation-scope"/>
-    <updated>2026-09-05T00:00:00Z</updated>
+    <updated>2026-09-06T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.261 Windows headless repro found that the CLI docs&#x27; short `--setting-sources user,project,local` description does not explain the actual isolation boundary. Omitting `user` reportedly drops `~/.claude/CLAUDE.md`, user settings, plugins, plugin hooks, user skills, agents, and commands, while project `CLAUDE.md`, project settings, project hooks, `.mcp.json`, auto-memory, project commands, and an explicit `--settings` file can still load. A related macOS report found that `--setting-sources project` could still load user `CLAUDE.md` and rules when the project path sits under `$HOME`, and an older feature request shows users already expected source filtering to cover more than `settings.json`. Headless jobs that use the flag for clean repo-owned execution can therefore either lose expected user/plugin guardrails or inherit user memory in path-dependent ways without documentation making the boundary obvious.</summary>
     <category term="Configuration &amp; settings"/>
   </entry>
@@ -90,7 +98,7 @@
     <title>[HIGH] Bash-first file access can skip nested CLAUDE.md context.</title>
     <id>https://framework.boucle.sh/limitations.html#bash-first-file-access-can-skip-nested-claudemd</id>
     <link href="https://framework.boucle.sh/limitations.html#bash-first-file-access-can-skip-nested-claudemd"/>
-    <updated>2026-09-05T00:00:00Z</updated>
+    <updated>2026-09-06T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.260 macOS repro found that sessions in bypassPermissions or auto mode can receive an internal Bash-first instruction that steers routine reads through `cat`, `head`, or `sed -n` instead of the dedicated Read tool. In the repro, reading `src/sub/hello.txt` through Read loaded both the matching path-scoped rule and `src/sub/CLAUDE.md`, but reading the same file with Bash returned the file content without the nested context tokens. The same report notes that the rollout is cohort-gated and can propagate from a top-level session into subagents, so two users on the same version can see different context-loading behavior.</summary>
     <category term="Context &amp; memory"/>
   </entry>
@@ -98,7 +106,7 @@
     <title>[HIGH] Bash allow rules can miss in-project absolute script paths.</title>
     <id>https://framework.boucle.sh/limitations.html#bash-allow-rules-do-not-normalize-in-project-absolute-paths</id>
     <link href="https://framework.boucle.sh/limitations.html#bash-allow-rules-do-not-normalize-in-project-absolute-paths"/>
-    <updated>2026-09-05T00:00:00Z</updated>
+    <updated>2026-09-06T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.258 macOS VS Code setup found that a project-level permission rule such as `Bash(.claude/scripts/*)` allowed the project-relative script invocation but prompted again when the same script was invoked by its absolute path under the same project root. The PermissionRequest hook then suggested an absolute, machine-specific `Bash(/path/to/project/.claude/scripts/hello *)` rule with a local-settings destination, pushing a team-shareable rule into personal settings drift. Agents and subagents often choose absolute paths when uncertain about the current directory, so a committed allowlist can look correct while still generating prompts or local grants for equivalent in-project commands.</summary>
     <category term="Permission system"/>
   </entry>
@@ -106,7 +114,7 @@
     <title>[HIGH] Homebrew Bash heredocs can deadlock and truncate target files on macOS.</title>
     <id>https://framework.boucle.sh/limitations.html#homebrew-bash-heredocs-can-deadlock-and-truncate-targets</id>
     <link href="https://framework.boucle.sh/limitations.html#homebrew-bash-heredocs-can-deadlock-and-truncate-targets"/>
-    <updated>2026-09-05T00:00:00Z</updated>
+    <updated>2026-09-06T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.260 macOS setup found that Bash-tool heredoc file writes can hang until the 120 second timeout and leave the redirected target as a zero-byte file when PATH resolves `bash` to Homebrew Bash 5.1 or newer. The underlying shell behavior is a Bash heredoc pipe deadlock on macOS&#x27;s small pipe capacity for bodies above about 512 bytes and below 65536 bytes, but Claude Code amplifies it by using the PATH-selected Bash interpreter and by truncating the target before the heredoc body is successfully delivered. Auto and bypass-permissions modes are especially exposed when their prompt guidance steers routine file writes through `cat &lt;&lt;EOF` instead of the dedicated Write tool.</summary>
     <category term="Bash &amp; shell execution"/>
   </entry>
@@ -114,7 +122,7 @@
     <title>[HIGH] Nested `Agent(type)` allowlists can be ignored in subagent definitions.</title>
     <id>https://framework.boucle.sh/limitations.html#nested-agent-type-allowlists-can-be-ignored</id>
     <link href="https://framework.boucle.sh/limitations.html#nested-agent-type-allowlists-can-be-ignored"/>
-    <updated>2026-09-05T00:00:00Z</updated>
+    <updated>2026-09-06T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.259 macOS repro found that a custom subagent definition with `tools: [&quot;Read&quot;, &quot;Agent(inner)&quot;]` could still spawn a sibling subagent type named `other`. The same `Agent(inner)` allowlist was honored when applied to the main thread, and a session-wide `permissions.deny: [&quot;Agent(other)&quot;]` did block the nested spawn, so the denial path reached nested agent calls while the per-subagent allowlist did not. Orchestrator-style agents can therefore appear to have a constrained fan-out surface while still being able to spawn any available subagent type allowed by broader session policy and depth limits.</summary>
     <category term="Subagent &amp; spawned agents"/>
   </entry>
@@ -122,7 +130,7 @@
     <title>[HIGH] Explicit default `CLAUDE_CONFIG_DIR` can select an empty Keychain store.</title>
     <id>https://framework.boucle.sh/limitations.html#explicit-default-claude-config-dir-can-select-empty-keychain-store</id>
     <link href="https://framework.boucle.sh/limitations.html#explicit-default-claude-config-dir-can-select-empty-keychain-store"/>
-    <updated>2026-09-05T00:00:00Z</updated>
+    <updated>2026-09-06T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.261 macOS setup found that leaving `CLAUDE_CONFIG_DIR` unset and setting it explicitly to the byte-identical default path `$HOME/.claude` can consult different macOS Keychain credential entries. In the repro, ordinary `claude auth status` reported a valid Claude.ai login, while `CLAUDE_CONFIG_DIR=&quot;$HOME/.claude&quot; claude auth status` reported `loggedIn: false` with no diagnostic naming the credential store that had been consulted. Automation that defensively forwards a resolved config directory to child Claude processes can therefore turn a logged-in parent process into an unauthenticated child even though the filesystem path did not actually change.</summary>
     <category term="Auth &amp; accounts"/>
   </entry>
@@ -130,7 +138,7 @@
     <title>[HIGH] Bash permission dialogs can obscure compound command risk.</title>
     <id>https://framework.boucle.sh/limitations.html#bash-permission-dialog-can-obscure-compound-command-risk</id>
     <link href="https://framework.boucle.sh/limitations.html#bash-permission-dialog-can-obscure-compound-command-risk"/>
-    <updated>2026-09-05T00:00:00Z</updated>
+    <updated>2026-09-06T00:00:00Z</updated>
     <summary>A reported Claude Code VS Code permission dialog showed dense machine-composed Bash commands in a small monochrome text box, without syntax highlighting, structural line breaks, path emphasis, or a plain-language summary. The user-facing risk is that the final human approval checkpoint can degrade into unreadable raw shell text, especially for compound commands with pipes or `&amp;&amp;`, so users may approve from fatigue rather than actually reviewing what will run.</summary>
     <category term="TUI &amp; display"/>
   </entry>
@@ -138,7 +146,7 @@
     <title>[HIGH] Desktop self-updates can interrupt running sessions.</title>
     <id>https://framework.boucle.sh/limitations.html#desktop-self-updates-can-interrupt-running-sessions</id>
     <link href="https://framework.boucle.sh/limitations.html#desktop-self-updates-can-interrupt-running-sessions"/>
-    <updated>2026-09-05T00:00:00Z</updated>
+    <updated>2026-09-06T00:00:00Z</updated>
     <summary>A reported Windows Claude Desktop 1.46388.3 sideloaded MSIX setup found that the app can stop its own service, replace its package, and restart while a Code session is running. The reporter documented nine registered versions in nine days, including daytime updates and one overnight update that ended roughly seven hours of unattended work. The evidence points to an orchestrated self-update rather than a crash: AppX deployment and CoworkVMService events occur in the same minute, no Crashpad report appears, and the user-facing file-in-use dialog attributes the conflict to another program even though Claude is the program holding the files being replaced. Users running scheduled, remote, or overnight Desktop work therefore cannot treat an alive app window as a stable execution boundary across updates.</summary>
     <category term="Desktop &amp; IDE integration"/>
   </entry>
@@ -146,7 +154,7 @@
     <title>[CRITICAL] `change_directory` stale project dirs can erase prompts.</title>
     <id>https://framework.boucle.sh/limitations.html#change-directory-stale-project-dir-can-erase-prompts</id>
     <link href="https://framework.boucle.sh/limitations.html#change-directory-stale-project-dir-can-erase-prompts"/>
-    <updated>2026-09-05T00:00:00Z</updated>
+    <updated>2026-09-06T00:00:00Z</updated>
     <summary>A reported Claude Desktop macOS session using Claude Code 2.1.204 found that `change_directory` adopted a new project&#x27;s settings and hooks while leaving `$CLAUDE_PROJECT_DIR` pointed at the scratch workspace where the session launched. A `UserPromptSubmit` hook command that resolved through that stale variable then tried to run a missing script, and CPython returned exit status 2 for ENOENT. Claude Code interpreted that same exit code as an intentional prompt denial, so every later user prompt was blocked and effectively erased while the session could not be asked to diagnose itself.</summary>
     <category term="Hook behavior &amp; events"/>
   </entry>
@@ -154,16 +162,8 @@
     <title>[HIGH] Desktop task sandboxes can clone plugins until disk fills.</title>
     <id>https://framework.boucle.sh/limitations.html#desktop-task-sandboxes-can-clone-plugins-until-disk-fills</id>
     <link href="https://framework.boucle.sh/limitations.html#desktop-task-sandboxes-can-clone-plugins-until-disk-fills"/>
-    <updated>2026-09-05T00:00:00Z</updated>
+    <updated>2026-09-06T00:00:00Z</updated>
     <summary>A reported Claude Desktop macOS local-agent-mode setup found that `~/Library/Application Support/Claude/local-agent-mode-sessions/&lt;session-id&gt;/&lt;conversation-id&gt;/` accumulated one `local_&lt;uuid&gt;` task sandbox per subagent run and did not remove those directories after tasks completed. Each directory was reported as a full clone of `~/.claude`, dominated by `~/.claude/plugins`, around 300-310 MB per copy. In one active session, roughly 19 task runs created about 8 GB within a few hours, and after manual deletion of more than 100 GB the same session regenerated about 8.8 GB within about an hour of continued subagent-heavy use.</summary>
     <category term="Cowork &amp; remote"/>
-  </entry>
-  <entry>
-    <title>[CRITICAL] macOS sandboxed `mktemp` can empty a cleanup target.</title>
-    <id>https://framework.boucle.sh/limitations.html#macos-sandbox-mktemp-can-empty-cleanup-target</id>
-    <link href="https://framework.boucle.sh/limitations.html#macos-sandbox-mktemp-can-empty-cleanup-target"/>
-    <updated>2026-09-05T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.255 macOS sandbox setup found that a template-less `mktemp -d` failed under the Bash tool because BSD `mktemp` chose the Darwin per-user temp directory instead of Claude Code&#x27;s sandboxed `$TMPDIR`. The failed command substitution left the scratch variable empty, `cd &quot;&quot; &amp;&amp; pwd -P` then resolved it to the working directory, and a later bare `rm -rf &quot;$T&quot;` ran against that directory without a recorded critical-path prompt. The reporter saw large local repo damage before the default Bash timeout stopped the tool result, while protected `.git` paths and deny rules limited part of the blast radius.</summary>
-    <category term="Sandbox &amp; permissions"/>
   </entry>
 </feed>
