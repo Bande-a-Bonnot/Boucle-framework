@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 1907,
+  "count": 1908,
   "categories": {
     "Hook behavior & events": 243,
     "Permission system": 175,
@@ -11,7 +11,7 @@
     "Security & trust boundaries": 49,
     "Cowork & remote": 42,
     "TUI & display": 41,
-    "Sandbox & permissions": 39,
+    "Sandbox & permissions": 40,
     "Configuration behavior": 36,
     "Platform & compatibility": 35,
     "Context & memory": 34,
@@ -197,11 +197,36 @@
   },
   "severity_counts": {
     "CRITICAL": 172,
-    "HIGH": 1115,
+    "HIGH": 1116,
     "LOW": 110,
     "MEDIUM": 510
   },
   "entries": [
+    {
+      "id": "sandbox-policy-can-diverge-from-settings-json-at-runtime",
+      "title": "Sandbox policy can diverge from settings.json at runtime.",
+      "category": "Sandbox & permissions",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/92445"
+      ],
+      "date_added": "2026-09-06",
+      "description": "A reported Claude Code macOS setup found that the effective sandbox policy did not match an unchanged `~/.claude/settings.json`. A configured `sandbox.filesystem.allowWrite` glob for `~/repos/vaults/*-kb` still refused writes to a matching path, while a plain-directory allowlist case succeeded. In the same session, `gh *` was listed in `sandbox.excludedCommands`, but some GitHub CLI GraphQL operations still appeared to run through the filtering proxy before later succeeding without any settings change. The policy description shown to the model also changed mid-session even though the settings file had not been modified.",
+      "workaround": "Treat the model-visible sandbox summary and `settings.json` as hypotheses until same-session canaries prove the effective policy. After startup and after Claude Code updates, run harmless probes for every critical allowWrite glob and excluded command, and fail closed if a supposedly writable path is refused or an excluded command still sees sandbox proxy behavior. Prefer simple explicit allowlist paths over glob-only grants for sensitive workflows, record the settings file mtime alongside probe output, and do not let automation reinterpret intermittent sandbox failures as ordinary network or filesystem errors without rechecking the policy boundary.",
+      "tags": [
+        "macos",
+        "sandbox",
+        "settings",
+        "allowWrite",
+        "glob",
+        "excludedCommands",
+        "gh",
+        "proxy",
+        "policy-drift",
+        "runtime-canary"
+      ]
+    },
     {
       "id": "remote-control-opt-out-can-be-ignored-and-draft-into-input",
       "title": "Remote Control opt-out can be ignored and draft into the live input.",
@@ -26147,27 +26172,27 @@
     }
   ],
   "status_summary": {
-    "open": 1893,
+    "open": 1894,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 172,
-    "high": 1115,
+    "high": 1116,
     "low": 110,
     "medium": 510
   },
   "lastUpdated": "2026-09-06",
   "stats": {
-    "total": 1907,
+    "total": 1908,
     "critical": 172,
-    "high": 1115,
+    "high": 1116,
     "medium": 510,
     "low": 110,
-    "open": 1893,
+    "open": 1894,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-09-06",
-  "total": 1907
+  "total": 1908
 }
