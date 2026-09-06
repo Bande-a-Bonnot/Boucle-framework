@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 1909,
+  "count": 1910,
   "categories": {
     "Hook behavior & events": 244,
     "Permission system": 175,
@@ -30,7 +30,7 @@
     "Scheduling & remote triggers": 19,
     "Model behavior": 18,
     "Scheduled tasks": 17,
-    "Worktrees & isolation": 15,
+    "Worktrees & isolation": 16,
     "Git & repository safety": 14,
     "Worktree": 14,
     "File system & paths": 13,
@@ -197,11 +197,36 @@
   },
   "severity_counts": {
     "CRITICAL": 172,
-    "HIGH": 1117,
+    "HIGH": 1118,
     "LOW": 110,
     "MEDIUM": 510
   },
   "entries": [
+    {
+      "id": "sibling-repository-worktrees-require-broad-additionaldirectories-grants",
+      "title": "Sibling repository worktrees require broad additionalDirectories grants.",
+      "category": "Worktrees & isolation",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/92417"
+      ],
+      "date_added": "2026-09-06",
+      "description": "A reported Claude Code 2.1.259 macOS multi-agent layout put each subagent in a sibling git worktree such as `../repo-wt/<name>` so agents do not share one checkout. Because subagents inherit the parent session working directory and the Agent tool has no cwd parameter, Edit and Write calls against those sibling worktrees are treated as outside the working directory even when `git rev-parse --git-common-dir` would identify them as the same repository. In acceptEdits mode this can prompt for every edit, while auto mode routes the edit through the permission classifier instead of treating it as an in-project write. The documented workaround, `permissions.additionalDirectories`, grants standing access to a broader parent tree and can outlive the temporary agent that needed it.",
+      "workaround": "For multi-agent worktree layouts, do not treat a sibling checkout as inside the project until the current session proves how Claude Code classifies it. Prefer narrow per-worktree additionalDirectories entries over granting a shared parent directory, remove those grants after the run, and keep the worktree parent outside any unrelated sensitive checkout. If you move worktrees under `.claude/worktrees/`, ignore or exclude that path so tooling does not scan a duplicate checkout or stage gitlinks. For unattended agents, add a harmless same-repository sibling-worktree edit canary and fail closed if it prompts unexpectedly or requires a broader directory grant.",
+      "tags": [
+        "macos",
+        "worktrees",
+        "subagents",
+        "additionalDirectories",
+        "acceptEdits",
+        "auto-mode",
+        "permissions",
+        "git-worktree",
+        "least-privilege",
+        "runtime-canary"
+      ]
+    },
     {
       "id": "posttooluse-stdin-payload-can-leak-to-project-root-file-on-windows-git-bash",
       "title": "PostToolUse stdin payload can leak to a project-root file on Windows Git Bash.",
@@ -26197,27 +26222,27 @@
     }
   ],
   "status_summary": {
-    "open": 1895,
+    "open": 1896,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 172,
-    "high": 1117,
+    "high": 1118,
     "low": 110,
     "medium": 510
   },
   "lastUpdated": "2026-09-06",
   "stats": {
-    "total": 1909,
+    "total": 1910,
     "critical": 172,
-    "high": 1117,
+    "high": 1118,
     "medium": 510,
     "low": 110,
-    "open": 1895,
+    "open": 1896,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-09-06",
-  "total": 1909
+  "total": 1910
 }

@@ -7,6 +7,14 @@
   <updated>2026-09-06T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[HIGH] Sibling repository worktrees require broad additionalDirectories grants.</title>
+    <id>https://framework.boucle.sh/limitations.html#sibling-repository-worktrees-require-broad-additionaldirectories-grants</id>
+    <link href="https://framework.boucle.sh/limitations.html#sibling-repository-worktrees-require-broad-additionaldirectories-grants"/>
+    <updated>2026-09-06T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.259 macOS multi-agent layout put each subagent in a sibling git worktree such as `../repo-wt/&lt;name&gt;` so agents do not share one checkout. Because subagents inherit the parent session working directory and the Agent tool has no cwd parameter, Edit and Write calls against those sibling worktrees are treated as outside the working directory even when `git rev-parse --git-common-dir` would identify them as the same repository. In acceptEdits mode this can prompt for every edit, while auto mode routes the edit through the permission classifier instead of treating it as an in-project write. The documented workaround, `permissions.additionalDirectories`, grants standing access to a broader parent tree and can outlive the temporary agent that needed it.</summary>
+    <category term="Worktrees &amp; isolation"/>
+  </entry>
+  <entry>
     <title>[HIGH] PostToolUse stdin payload can leak to a project-root file on Windows Git Bash.</title>
     <id>https://framework.boucle.sh/limitations.html#posttooluse-stdin-payload-can-leak-to-project-root-file-on-windows-git-bash</id>
     <link href="https://framework.boucle.sh/limitations.html#posttooluse-stdin-payload-can-leak-to-project-root-file-on-windows-git-bash"/>
@@ -157,13 +165,5 @@
     <updated>2026-09-06T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.258 macOS VS Code setup found that a project-level permission rule such as `Bash(.claude/scripts/*)` allowed the project-relative script invocation but prompted again when the same script was invoked by its absolute path under the same project root. The PermissionRequest hook then suggested an absolute, machine-specific `Bash(/path/to/project/.claude/scripts/hello *)` rule with a local-settings destination, pushing a team-shareable rule into personal settings drift. Agents and subagents often choose absolute paths when uncertain about the current directory, so a committed allowlist can look correct while still generating prompts or local grants for equivalent in-project commands.</summary>
     <category term="Permission system"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Homebrew Bash heredocs can deadlock and truncate target files on macOS.</title>
-    <id>https://framework.boucle.sh/limitations.html#homebrew-bash-heredocs-can-deadlock-and-truncate-targets</id>
-    <link href="https://framework.boucle.sh/limitations.html#homebrew-bash-heredocs-can-deadlock-and-truncate-targets"/>
-    <updated>2026-09-06T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.260 macOS setup found that Bash-tool heredoc file writes can hang until the 120 second timeout and leave the redirected target as a zero-byte file when PATH resolves `bash` to Homebrew Bash 5.1 or newer. The underlying shell behavior is a Bash heredoc pipe deadlock on macOS&#x27;s small pipe capacity for bodies above about 512 bytes and below 65536 bytes, but Claude Code amplifies it by using the PATH-selected Bash interpreter and by truncating the target before the heredoc body is successfully delivered. Auto and bypass-permissions modes are especially exposed when their prompt guidance steers routine file writes through `cat &lt;&lt;EOF` instead of the dedicated Write tool.</summary>
-    <category term="Bash &amp; shell execution"/>
   </entry>
 </feed>
