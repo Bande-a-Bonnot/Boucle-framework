@@ -7,6 +7,14 @@
   <updated>2026-09-06T00:00:00Z</updated>
   <author><name>Boucle</name></author>
   <entry>
+    <title>[HIGH] PostToolUse stdin payload can leak to a project-root file on Windows Git Bash.</title>
+    <id>https://framework.boucle.sh/limitations.html#posttooluse-stdin-payload-can-leak-to-project-root-file-on-windows-git-bash</id>
+    <link href="https://framework.boucle.sh/limitations.html#posttooluse-stdin-payload-can-leak-to-project-root-file-on-windows-git-bash"/>
+    <updated>2026-09-06T00:00:00Z</updated>
+    <summary>A reported Claude Code Windows setup with Git Bash saw intermittent stray files appear in the project root with bare small-integer names while a `PostToolUse` hook was registered for Bash and write-family tools. The newest captured file contained the complete raw JSON envelope that should have been delivered to the hook on stdin, including `session_id`, `transcript_path`, `hook_event_name: &quot;PostToolUse&quot;`, `tool_name`, `tool_input`, and `tool_response`. The reporter says the hook script itself only reads stdin and logs internally, replaying the captured payload through it creates no files, and every observed occurrence coincided with a Bash tool call.</summary>
+    <category term="Hook behavior &amp; events"/>
+  </entry>
+  <entry>
     <title>[HIGH] Sandbox policy can diverge from settings.json at runtime.</title>
     <id>https://framework.boucle.sh/limitations.html#sandbox-policy-can-diverge-from-settings-json-at-runtime</id>
     <link href="https://framework.boucle.sh/limitations.html#sandbox-policy-can-diverge-from-settings-json-at-runtime"/>
@@ -157,13 +165,5 @@
     <updated>2026-09-06T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.260 macOS setup found that Bash-tool heredoc file writes can hang until the 120 second timeout and leave the redirected target as a zero-byte file when PATH resolves `bash` to Homebrew Bash 5.1 or newer. The underlying shell behavior is a Bash heredoc pipe deadlock on macOS&#x27;s small pipe capacity for bodies above about 512 bytes and below 65536 bytes, but Claude Code amplifies it by using the PATH-selected Bash interpreter and by truncating the target before the heredoc body is successfully delivered. Auto and bypass-permissions modes are especially exposed when their prompt guidance steers routine file writes through `cat &lt;&lt;EOF` instead of the dedicated Write tool.</summary>
     <category term="Bash &amp; shell execution"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Nested `Agent(type)` allowlists can be ignored in subagent definitions.</title>
-    <id>https://framework.boucle.sh/limitations.html#nested-agent-type-allowlists-can-be-ignored</id>
-    <link href="https://framework.boucle.sh/limitations.html#nested-agent-type-allowlists-can-be-ignored"/>
-    <updated>2026-09-06T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.259 macOS repro found that a custom subagent definition with `tools: [&quot;Read&quot;, &quot;Agent(inner)&quot;]` could still spawn a sibling subagent type named `other`. The same `Agent(inner)` allowlist was honored when applied to the main thread, and a session-wide `permissions.deny: [&quot;Agent(other)&quot;]` did block the nested spawn, so the denial path reached nested agent calls while the per-subagent allowlist did not. Orchestrator-style agents can therefore appear to have a constrained fan-out surface while still being able to spawn any available subagent type allowed by broader session policy and depth limits.</summary>
-    <category term="Subagent &amp; spawned agents"/>
   </entry>
 </feed>

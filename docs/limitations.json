@@ -1,8 +1,8 @@
 {
   "version": "0.13.0",
-  "count": 1908,
+  "count": 1909,
   "categories": {
-    "Hook behavior & events": 243,
+    "Hook behavior & events": 244,
     "Permission system": 175,
     "MCP & plugin issues": 121,
     "Hook bypass & evasion": 109,
@@ -197,11 +197,36 @@
   },
   "severity_counts": {
     "CRITICAL": 172,
-    "HIGH": 1116,
+    "HIGH": 1117,
     "LOW": 110,
     "MEDIUM": 510
   },
   "entries": [
+    {
+      "id": "posttooluse-stdin-payload-can-leak-to-project-root-file-on-windows-git-bash",
+      "title": "PostToolUse stdin payload can leak to a project-root file on Windows Git Bash.",
+      "category": "Hook behavior & events",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/92451"
+      ],
+      "date_added": "2026-09-06",
+      "description": "A reported Claude Code Windows setup with Git Bash saw intermittent stray files appear in the project root with bare small-integer names while a `PostToolUse` hook was registered for Bash and write-family tools. The newest captured file contained the complete raw JSON envelope that should have been delivered to the hook on stdin, including `session_id`, `transcript_path`, `hook_event_name: \"PostToolUse\"`, `tool_name`, `tool_input`, and `tool_response`. The reporter says the hook script itself only reads stdin and logs internally, replaying the captured payload through it creates no files, and every observed occurrence coincided with a Bash tool call.",
+      "workaround": "On Windows Git Bash setups, do not assume that a `PostToolUse` hook receiving some events proves every hook payload is delivered only through stdin. Add a same-session canary that triggers a harmless Bash tool call and verifies both hook-local payload receipt and the absence of new bare-numeric files in the project root. Keep hook payload logs redacted because raw `tool_input` and `tool_response` may contain secrets, inspect stray numeric files before committing or sharing a support bundle, and treat any unexpected project-root payload file as a fail-closed signal until the hook launcher, shell, and Claude Code version are isolated.",
+      "tags": [
+        "windows",
+        "git-bash",
+        "posttooluse",
+        "hooks",
+        "stdin",
+        "payload-leak",
+        "project-root",
+        "bash-tool",
+        "support-bundle",
+        "runtime-canary"
+      ]
+    },
     {
       "id": "sandbox-policy-can-diverge-from-settings-json-at-runtime",
       "title": "Sandbox policy can diverge from settings.json at runtime.",
@@ -26172,27 +26197,27 @@
     }
   ],
   "status_summary": {
-    "open": 1894,
+    "open": 1895,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 172,
-    "high": 1116,
+    "high": 1117,
     "low": 110,
     "medium": 510
   },
   "lastUpdated": "2026-09-06",
   "stats": {
-    "total": 1908,
+    "total": 1909,
     "critical": 172,
-    "high": 1116,
+    "high": 1117,
     "medium": 510,
     "low": 110,
-    "open": 1894,
+    "open": 1895,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-09-06",
-  "total": 1908
+  "total": 1909
 }
