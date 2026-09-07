@@ -15,6 +15,14 @@
     <category term="Permission system"/>
   </entry>
   <entry>
+    <title>[HIGH] JVM sandboxing couples filesystem and network isolation.</title>
+    <id>https://framework.boucle.sh/limitations.html#jvm-sandbox-couples-filesystem-and-network-isolation</id>
+    <link href="https://framework.boucle.sh/limitations.html#jvm-sandbox-couples-filesystem-and-network-isolation"/>
+    <updated>2026-09-07T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.252 macOS sandbox setup found that enabling `sandbox.enabled` turns on filesystem containment and network proxying as a coupled unit. There is a documented `sandbox.filesystem.disabled` escape for keeping network isolation while disabling filesystem isolation, but no inverse setting for keeping filesystem isolation while bypassing network isolation. In the JVM case, `curl` could use the injected proxy environment, but Java&#x27;s HTTP client ignored those variables and even an explicit `-Dhttps.proxyHost` setup could not open a socket to the localhost sandbox proxy. The same report found JUnit `@TempDir` failures because Java&#x27;s default `java.io.tmpdir` pointed at the host Darwin temp directory rather than the sandbox-managed `$TMPDIR`, so most tests failed before running until the temp directory was overridden.</summary>
+    <category term="Sandbox &amp; permissions"/>
+  </entry>
+  <entry>
     <title>[HIGH] OAuth account email can enter model context and tool output.</title>
     <id>https://framework.boucle.sh/limitations.html#oauth-account-email-can-enter-model-context-and-tool-output</id>
     <link href="https://framework.boucle.sh/limitations.html#oauth-account-email-can-enter-model-context-and-tool-output"/>
@@ -157,13 +165,5 @@
     <updated>2026-09-07T00:00:00Z</updated>
     <summary>A reported Claude Code app update on 2026-09-05 wrapped `CLAUDE.md` and `MEMORY.md` loads in a system-reminder phrase saying the loaded instructions override defaults and must be followed exactly. The reporter found the exact wrapper in multiple same-day transcripts across unrelated projects and said no older transcript sample contained it. Because the wording uses the same authority-claim shape that users train agents to flag as prompt injection, a trusted harness-provided context load can look like attacker text, while real attacker text can look more familiar and therefore less suspicious.</summary>
     <category term="Security &amp; trust boundaries"/>
-  </entry>
-  <entry>
-    <title>[HIGH] claude-security scan-changes can analyze the wrong diff content.</title>
-    <id>https://framework.boucle.sh/limitations.html#claude-security-scan-changes-can-analyze-wrong-diff-content</id>
-    <link href="https://framework.boucle.sh/limitations.html#claude-security-scan-changes-can-analyze-wrong-diff-content"/>
-    <updated>2026-09-07T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.259 Windows claude-security `scan-changes` run recorded the intended merge-base and head commit in `scan-meta.json`, but its inventory and research output repeatedly analyzed unrelated CI workflow files from outside the requested range. A retry with a fresh report directory and workflow run id reproduced the same wrong result, while a plain `git diff --numstat &lt;merge-base&gt;..&lt;HEAD&gt;` showed the actual range touched application and test files instead. Security-review output can therefore look tied to the correct revision pair while its conclusions, hot-file list, and component-change claims come from different content.</summary>
-    <category term="MCP &amp; plugin issues"/>
   </entry>
 </feed>
