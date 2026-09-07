@@ -31,6 +31,14 @@
     <category term="Sandbox &amp; permissions"/>
   </entry>
   <entry>
+    <title>[HIGH] Plugin-native PreToolUse hooks can fail open across session modes.</title>
+    <id>https://framework.boucle.sh/limitations.html#plugin-native-pretooluse-hooks-can-fail-open</id>
+    <link href="https://framework.boucle.sh/limitations.html#plugin-native-pretooluse-hooks-can-fail-open"/>
+    <updated>2026-09-07T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.263 Windows setup found that PreToolUse hooks auto-discovered from an installed plugin&#x27;s `hooks/hooks.json` were not enforced the same way as hooks declared directly in `settings.json`. In the reported matrix, a settings-declared exit-2 hook blocked interactively, while a plugin-native exit-2 hook blocked only in print mode and did not block an interactive session. A plugin-native hook returning the documented JSON `hookSpecificOutput.permissionDecision: &quot;deny&quot;` shape reportedly failed to block in both interactive and print mode, even though the hook module, dispatcher pipeline, plugin bootstrap subprocess, and cached plugin copy all produced the expected deny JSON outside the runtime.</summary>
+    <category term="MCP &amp; plugin issues"/>
+  </entry>
+  <entry>
     <title>[HIGH] OAuth account email can enter model context and tool output.</title>
     <id>https://framework.boucle.sh/limitations.html#oauth-account-email-can-enter-model-context-and-tool-output</id>
     <link href="https://framework.boucle.sh/limitations.html#oauth-account-email-can-enter-model-context-and-tool-output"/>
@@ -157,13 +165,5 @@
     <updated>2026-09-07T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.261 Linux WSL2 repro found that putting a non-string value inside `sandbox.filesystem.denyRead` or `sandbox.filesystem.denyWrite`, such as `{ &quot;path&quot;: &quot;/abs/path&quot; }` or `42`, made the CLI accept the settings file, exit zero, and print no warning while applying neither `permissions.deny` nor `PreToolUse` hooks for the run. The same file enforced correctly when the deny-list entry was a string, and deleting the `sandbox` key entirely restored the deny rule and hook path. A settings block that appears to add sandbox restrictions can therefore make the session less restrictive than omitting the block, including allowing a denied `Read` to return covered file contents to the model while the hook witness file proves the hook never ran.</summary>
     <category term="Sandbox &amp; permissions"/>
-  </entry>
-  <entry>
-    <title>[HIGH] UserPromptSubmit hooks can be registered but never invoked in Windows Git Bash.</title>
-    <id>https://framework.boucle.sh/limitations.html#userpromptsubmit-hooks-can-be-registered-but-never-invoked-in-windows-git-bash</id>
-    <link href="https://framework.boucle.sh/limitations.html#userpromptsubmit-hooks-can-be-registered-but-never-invoked-in-windows-git-bash"/>
-    <updated>2026-09-07T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.261 Windows Git Bash CLI setup showed a project `UserPromptSubmit` hook correctly listed by `/hooks`, loaded from `.claude/settings.json`, and passing a direct stdin-payload test with the expected exit 2 block behavior. In fresh interactive sessions, however, typed prompts containing a hardcoded-looking secret reached the model normally, appeared in the JSONL transcript as user messages, and produced assistant responses with token usage. A follow-up ruled out the older early-session race theory: sending an innocuous warm-up prompt first still left the second prompt unguarded. This makes prompt-time credential or policy hooks look installed and testable while real interactive submissions bypass them silently in that client environment.</summary>
-    <category term="Hook behavior &amp; events"/>
   </entry>
 </feed>
