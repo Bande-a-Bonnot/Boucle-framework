@@ -15,6 +15,14 @@
     <category term="Permission system"/>
   </entry>
   <entry>
+    <title>[HIGH] Custom CLAUDE_CODE_TMPDIR can be read-only inside the sandbox.</title>
+    <id>https://framework.boucle.sh/limitations.html#custom-claude-code-tmpdir-can-be-read-only-in-sandbox</id>
+    <link href="https://framework.boucle.sh/limitations.html#custom-claude-code-tmpdir-can-be-read-only-in-sandbox"/>
+    <updated>2026-09-07T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.263 Linux sandbox setup found that setting `CLAUDE_CODE_TMPDIR` to a directory under `$HOME` could make sandboxed Bash expose that path as `$TMPDIR` while still denying writes to it. Harmless temp-file creation with `mktemp -d` failed with a read-only filesystem error, test suites that depended on temporary directories cascaded into unrelated-looking failures, and nested Claude Code sessions could not create their control socket. The reporter noted that `failIfUnavailable: true` correctly stopped the nested session instead of continuing unsandboxed, but the broken temp path also made in-session repair hard because writing the settings change under `~/.claude` was denied by the same sandbox.</summary>
+    <category term="Sandbox &amp; permissions"/>
+  </entry>
+  <entry>
     <title>[HIGH] Sibling repository worktrees require broad additionalDirectories grants.</title>
     <id>https://framework.boucle.sh/limitations.html#sibling-repository-worktrees-require-broad-additionaldirectories-grants</id>
     <link href="https://framework.boucle.sh/limitations.html#sibling-repository-worktrees-require-broad-additionaldirectories-grants"/>
@@ -157,13 +165,5 @@
     <updated>2026-09-07T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.261 Windows headless repro found that the CLI docs&#x27; short `--setting-sources user,project,local` description does not explain the actual isolation boundary. Omitting `user` reportedly drops `~/.claude/CLAUDE.md`, user settings, plugins, plugin hooks, user skills, agents, and commands, while project `CLAUDE.md`, project settings, project hooks, `.mcp.json`, auto-memory, project commands, and an explicit `--settings` file can still load. A related macOS report found that `--setting-sources project` could still load user `CLAUDE.md` and rules when the project path sits under `$HOME`, and an older feature request shows users already expected source filtering to cover more than `settings.json`. Headless jobs that use the flag for clean repo-owned execution can therefore either lose expected user/plugin guardrails or inherit user memory in path-dependent ways without documentation making the boundary obvious.</summary>
     <category term="Configuration &amp; settings"/>
-  </entry>
-  <entry>
-    <title>[HIGH] Bash-first file access can skip nested CLAUDE.md context.</title>
-    <id>https://framework.boucle.sh/limitations.html#bash-first-file-access-can-skip-nested-claudemd</id>
-    <link href="https://framework.boucle.sh/limitations.html#bash-first-file-access-can-skip-nested-claudemd"/>
-    <updated>2026-09-07T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.260 macOS repro found that sessions in bypassPermissions or auto mode can receive an internal Bash-first instruction that steers routine reads through `cat`, `head`, or `sed -n` instead of the dedicated Read tool. In the repro, reading `src/sub/hello.txt` through Read loaded both the matching path-scoped rule and `src/sub/CLAUDE.md`, but reading the same file with Bash returned the file content without the nested context tokens. The same report notes that the rollout is cohort-gated and can propagate from a top-level session into subagents, so two users on the same version can see different context-loading behavior.</summary>
-    <category term="Context &amp; memory"/>
   </entry>
 </feed>
