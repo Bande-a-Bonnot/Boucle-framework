@@ -1,9 +1,9 @@
 {
   "version": "0.13.0",
-  "count": 1912,
+  "count": 1913,
   "categories": {
     "Hook behavior & events": 244,
-    "Permission system": 176,
+    "Permission system": 177,
     "MCP & plugin issues": 121,
     "Hook bypass & evasion": 109,
     "Subagent & spawned agents": 87,
@@ -197,11 +197,36 @@
   },
   "severity_counts": {
     "CRITICAL": 172,
-    "HIGH": 1120,
+    "HIGH": 1121,
     "LOW": 110,
     "MEDIUM": 510
   },
   "entries": [
+    {
+      "id": "write-edit-validation-401-can-bypass-hook-observability",
+      "title": "Write/Edit validation 401s can bypass hook observability.",
+      "category": "Permission system",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/92599"
+      ],
+      "date_added": "2026-09-07",
+      "description": "A reported Claude Code Desktop 2.1.258 Windows child session found that built-in Write and Edit calls to script-like or extension-less targets were denied by an internal permission-validation path with a 401 `API key is invalid` error, while a small set of text and data extensions still passed. The denial carried `toolDenialKind: permission-rule`, happened even under bypassPermissions, and occurred before configured PreToolUse hooks ran. In affected sessions, Auto mode could not approve actions through the same path, and users were pushed toward Bash fallbacks even though those shell writes are a different enforcement surface from dedicated Write/Edit hooks.",
+      "workaround": "Treat `Error during validation` 401s on Write or Edit as a pre-hook platform failure, not as evidence that a local policy hook approved or denied the write. Do not retry denied writes in a loop, and do not switch to Bash shell writes for script targets unless the same change is covered by explicit Bash deny/allow rules, PreToolUse command inspection, and a post-run file diff. For unattended or auto-mode sessions, run a harmless Write/Edit canary for the file extensions the workflow needs, fail closed if validation returns an auth error or skips hook logs, and recover by restarting or reauthenticating the affected Desktop/CLI session rather than weakening hooks or broadening bypass settings.",
+      "tags": [
+        "windows",
+        "desktop",
+        "permissions",
+        "write",
+        "edit",
+        "auth",
+        "auto-mode",
+        "hooks",
+        "hook-observability",
+        "bash-fallback"
+      ]
+    },
     {
       "id": "project-additionaldirectories-can-be-excluded-from-read-fence",
       "title": "Project additionalDirectories can be excluded from the read fence.",
@@ -26273,27 +26298,27 @@
     }
   ],
   "status_summary": {
-    "open": 1898,
+    "open": 1899,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 172,
-    "high": 1120,
+    "high": 1121,
     "low": 110,
     "medium": 510
   },
   "lastUpdated": "2026-09-07",
   "stats": {
-    "total": 1912,
+    "total": 1913,
     "critical": 172,
-    "high": 1120,
+    "high": 1121,
     "medium": 510,
     "low": 110,
-    "open": 1898,
+    "open": 1899,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-09-07",
-  "total": 1912
+  "total": 1913
 }
