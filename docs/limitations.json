@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 1917,
+  "count": 1918,
   "categories": {
     "Hook behavior & events": 244,
     "Permission system": 178,
@@ -57,10 +57,10 @@
     "Browser automation": 5,
     "CLI / TUI rendering": 5,
     "Cost & usage": 5,
+    "MCP & plugins": 5,
     "Model behavior & compliance": 5,
     "Performance & resource usage": 5,
     "Plan mode": 5,
-    "MCP & plugins": 4,
     "Model behavior & instructions": 4,
     "Performance & resources": 4,
     "permissions": 4,
@@ -199,7 +199,7 @@
     "CRITICAL": 172,
     "HIGH": 1125,
     "LOW": 110,
-    "MEDIUM": 510
+    "MEDIUM": 511
   },
   "entries": [
     {
@@ -26395,10 +26395,35 @@
         "settings-recovery",
         "canary"
       ]
+    },
+    {
+      "id": "mcp-empty-resources-capability-can-be-treated-as-unsupported",
+      "title": "MCP resources capability advertised as an empty object can be treated as unsupported.",
+      "category": "MCP & plugins",
+      "severity": "MEDIUM",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/92729"
+      ],
+      "date_added": "2026-09-07",
+      "description": "A reported Claude Code Desktop Code-tab setup found that a Streamable HTTP MCP server advertising `capabilities.resources: {}` and `capabilities.tools: {}` could connect successfully and expose tools while Claude Code treated the same server as having no resource support. Direct JSON-RPC probes showed `initialize`, `resources/list`, `resources/read`, and `resources/templates/list` returning valid results, and Claude Code logs showed the client parsed the matching `initialize` response. The reporter narrowed the observable difference to capability object shape: a stdio server with `resources: {\"listChanged\": false}` listed resources, while the affected Rust `rmcp` server with `resources: {}` produced `No resources found` and `Server \"<name>\" does not support resources` from Claude Code's resource tools.",
+      "workaround": "Do not treat raw MCP wire-level `resources/list` success as proof that Claude Code can read those resources. After adding or updating an MCP server, test `ListMcpResourcesTool` and `ReadMcpResourceTool` from a Claude Code session, not only curl or SDK probes. If an affected server advertises `resources: {}` and Claude Code reports no support, try adding explicit optional capability fields such as `listChanged: false`, bridging through a transport/server implementation known to expose resources in Claude Code, or falling back to MCP tools that return the required data until the client accepts empty capability objects.",
+      "source": "GitHub issue scan",
+      "tags": [
+        "mcp",
+        "resources",
+        "streamable-http",
+        "rmcp",
+        "desktop",
+        "code-tab",
+        "capabilities",
+        "resource-tools",
+        "integration-canary"
+      ]
     }
   ],
   "status_summary": {
-    "open": 1903,
+    "open": 1904,
     "fixed": 13,
     "mitigated": 1
   },
@@ -26406,19 +26431,19 @@
     "critical": 172,
     "high": 1125,
     "low": 110,
-    "medium": 510
+    "medium": 511
   },
   "lastUpdated": "2026-09-07",
   "stats": {
-    "total": 1917,
+    "total": 1918,
     "critical": 172,
     "high": 1125,
-    "medium": 510,
+    "medium": 511,
     "low": 110,
-    "open": 1903,
+    "open": 1904,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-09-07",
-  "total": 1917
+  "total": 1918
 }
