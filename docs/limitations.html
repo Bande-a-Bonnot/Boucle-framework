@@ -221,7 +221,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">1911</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-09-07.</span></p>
+        <p class="subtitle"><span id="total-count">1912</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-09-07.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -21676,6 +21676,18 @@
                         <!-- workaround:desktop-self-updates-can-interrupt-running-sessions -->
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not run valuable unattended work inside Windows Desktop without external checkpoints and restart recovery. Before overnight or scheduled runs, write progress to ordinary project files, record the Desktop version, and keep a separate watchdog or task wrapper that can detect a restart and mark the job incomplete rather than successful. Where possible, run long automation through a launch path with explicit version and restart control, and reserve Desktop for supervised sessions until update deferral or clean-start-only update behavior is available. After every Desktop update, rerun a harmless hook and tool canary before trusting prior session, scheduled-task, or remote-control assumptions.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/92246" target="_blank">#92246</a></div>
+        </div>
+        <div class="kl-entry" data-category="Sandbox &amp; permissions" data-issues="92590" id="custom-claude-code-tmpdir-can-be-read-only-in-sandbox" data-severity="high" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1912</span>
+                <span class="kl-cat">Sandbox &amp; permissions</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#ea580c;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">high</span>
+            </div>
+            <h3>Custom CLAUDE_CODE_TMPDIR can be read-only inside the sandbox.</h3>
+            <p>A reported Claude Code 2.1.263 Linux sandbox setup found that setting `CLAUDE_CODE_TMPDIR` to a directory under `$HOME` could make sandboxed Bash expose that path as `$TMPDIR` while still denying writes to it. Harmless temp-file creation with `mktemp -d` failed with a read-only filesystem error, test suites that depended on temporary directories cascaded into unrelated-looking failures, and nested Claude Code sessions could not create their control socket. The reporter noted that `failIfUnavailable: true` correctly stopped the nested session instead of continuing unsandboxed, but the broken temp path also made in-session repair hard because writing the settings change under `~/.claude` was denied by the same sandbox.</p>
+                        <!-- workaround:custom-claude-code-tmpdir-can-be-read-only-in-sandbox -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> When using `sandbox.enabled` with a custom `CLAUDE_CODE_TMPDIR`, prove the effective temp directory in the same launch mode before running builds, tests, nested sessions, or unattended work. Use a harmless canary such as creating and deleting a directory under `$TMPDIR`, and fail closed if it returns `EROFS`, an empty path, or a socket bind failure. Prefer a workspace-local or otherwise proven writable temp root for sandboxed jobs until the installed Claude Code version expands the temp allowlist correctly. Keep an out-of-band shell path for reverting `~/.claude/settings.json`, and do not disable `failIfUnavailable` merely to work around this class of failure.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/92590" target="_blank">#92590</a></div>
         </div>
         <!-- END GENERATED LIMITATIONS -->
 <footer>

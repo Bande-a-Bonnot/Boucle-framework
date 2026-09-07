@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 1911,
+  "count": 1912,
   "categories": {
     "Hook behavior & events": 244,
     "Permission system": 176,
@@ -10,8 +10,8 @@
     "Desktop & IDE integration": 64,
     "Security & trust boundaries": 49,
     "Cowork & remote": 42,
+    "Sandbox & permissions": 41,
     "TUI & display": 41,
-    "Sandbox & permissions": 40,
     "Configuration behavior": 36,
     "Platform & compatibility": 35,
     "Context & memory": 34,
@@ -197,7 +197,7 @@
   },
   "severity_counts": {
     "CRITICAL": 172,
-    "HIGH": 1119,
+    "HIGH": 1120,
     "LOW": 110,
     "MEDIUM": 510
   },
@@ -26244,30 +26244,56 @@
         "data-integrity",
         "update-canary"
       ]
+    },
+    {
+      "id": "custom-claude-code-tmpdir-can-be-read-only-in-sandbox",
+      "title": "Custom CLAUDE_CODE_TMPDIR can be read-only inside the sandbox.",
+      "category": "Sandbox & permissions",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/92590"
+      ],
+      "date_added": "2026-09-07",
+      "description": "A reported Claude Code 2.1.263 Linux sandbox setup found that setting `CLAUDE_CODE_TMPDIR` to a directory under `$HOME` could make sandboxed Bash expose that path as `$TMPDIR` while still denying writes to it. Harmless temp-file creation with `mktemp -d` failed with a read-only filesystem error, test suites that depended on temporary directories cascaded into unrelated-looking failures, and nested Claude Code sessions could not create their control socket. The reporter noted that `failIfUnavailable: true` correctly stopped the nested session instead of continuing unsandboxed, but the broken temp path also made in-session repair hard because writing the settings change under `~/.claude` was denied by the same sandbox.",
+      "workaround": "When using `sandbox.enabled` with a custom `CLAUDE_CODE_TMPDIR`, prove the effective temp directory in the same launch mode before running builds, tests, nested sessions, or unattended work. Use a harmless canary such as creating and deleting a directory under `$TMPDIR`, and fail closed if it returns `EROFS`, an empty path, or a socket bind failure. Prefer a workspace-local or otherwise proven writable temp root for sandboxed jobs until the installed Claude Code version expands the temp allowlist correctly. Keep an out-of-band shell path for reverting `~/.claude/settings.json`, and do not disable `failIfUnavailable` merely to work around this class of failure.",
+      "source": "GitHub issue scan",
+      "tags": [
+        "linux",
+        "sandbox",
+        "tmpdir",
+        "claude-code-tmpdir",
+        "mktemp",
+        "bash",
+        "nested-sessions",
+        "fail-if-unavailable",
+        "settings-recovery",
+        "canary"
+      ]
     }
   ],
   "status_summary": {
-    "open": 1897,
+    "open": 1898,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 172,
-    "high": 1119,
+    "high": 1120,
     "low": 110,
     "medium": 510
   },
   "lastUpdated": "2026-09-07",
   "stats": {
-    "total": 1911,
+    "total": 1912,
     "critical": 172,
-    "high": 1119,
+    "high": 1120,
     "medium": 510,
     "low": 110,
-    "open": 1897,
+    "open": 1898,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-09-07",
-  "total": 1911
+  "total": 1912
 }
