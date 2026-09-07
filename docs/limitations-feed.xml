@@ -23,6 +23,14 @@
     <category term="Sandbox &amp; permissions"/>
   </entry>
   <entry>
+    <title>[HIGH] Linux denyWrite mid-path globs can fail open.</title>
+    <id>https://framework.boucle.sh/limitations.html#linux-denywrite-mid-path-globs-can-fail-open</id>
+    <link href="https://framework.boucle.sh/limitations.html#linux-denywrite-mid-path-globs-can-fail-open"/>
+    <updated>2026-09-07T00:00:00Z</updated>
+    <summary>A reported Claude Code 2.1.263 Linux sandbox setup found that `sandbox.filesystem.denyWrite` enforced literal paths and trailing subtree globs such as `/workspace/docs/**`, but silently ignored mid-path wildcard rules such as `/workspace/**/probe.txt` and `/workspace/*/probe.txt`. The same pattern shapes were enforced by `sandbox.filesystem.denyRead`, and equivalent `permissions.deny` rules could block the built-in Write tool while a Bash subprocess still wrote the protected path. `/status` and `claude doctor` showed only a broad glob-support warning, so a config can look active and pass tool-layer tests while the subprocess filesystem boundary is missing.</summary>
+    <category term="Sandbox &amp; permissions"/>
+  </entry>
+  <entry>
     <title>[HIGH] OAuth account email can enter model context and tool output.</title>
     <id>https://framework.boucle.sh/limitations.html#oauth-account-email-can-enter-model-context-and-tool-output</id>
     <link href="https://framework.boucle.sh/limitations.html#oauth-account-email-can-enter-model-context-and-tool-output"/>
@@ -157,13 +165,5 @@
     <updated>2026-09-07T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.261 macOS project-level settings file had existing `permissions.ask` and `permissions.deny` rules written with lowercase tool names such as `bash(git push *)` and `bash(rm -rf *)`. After the user opened `/permissions` and added an unrelated correctly cased `Bash(...)` rule, Claude Code rewrote `.claude/settings.json` with the new rule but silently removed the pre-existing lowercase ask and deny entries. The narrow risk is not only that lowercase rules may be invalid: the discoverable permissions editor can turn a validation problem into silent policy data loss, including loss of a dangerous-command deny rule, without warning, confirmation, or an audit log.</summary>
     <category term="Permission system"/>
-  </entry>
-  <entry>
-    <title>[MEDIUM] Trusted context wrappers can mimic prompt-injection language.</title>
-    <id>https://framework.boucle.sh/limitations.html#trusted-context-wrapper-can-mimic-prompt-injection</id>
-    <link href="https://framework.boucle.sh/limitations.html#trusted-context-wrapper-can-mimic-prompt-injection"/>
-    <updated>2026-09-07T00:00:00Z</updated>
-    <summary>A reported Claude Code app update on 2026-09-05 wrapped `CLAUDE.md` and `MEMORY.md` loads in a system-reminder phrase saying the loaded instructions override defaults and must be followed exactly. The reporter found the exact wrapper in multiple same-day transcripts across unrelated projects and said no older transcript sample contained it. Because the wording uses the same authority-claim shape that users train agents to flag as prompt injection, a trusted harness-provided context load can look like attacker text, while real attacker text can look more familiar and therefore less suspicious.</summary>
-    <category term="Security &amp; trust boundaries"/>
   </entry>
 </feed>
