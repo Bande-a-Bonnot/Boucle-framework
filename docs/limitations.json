@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 1915,
+  "count": 1916,
   "categories": {
     "Hook behavior & events": 244,
     "Permission system": 178,
@@ -10,7 +10,7 @@
     "Desktop & IDE integration": 64,
     "Security & trust boundaries": 50,
     "Cowork & remote": 42,
-    "Sandbox & permissions": 41,
+    "Sandbox & permissions": 42,
     "TUI & display": 41,
     "Configuration behavior": 36,
     "Platform & compatibility": 35,
@@ -197,7 +197,7 @@
   },
   "severity_counts": {
     "CRITICAL": 172,
-    "HIGH": 1123,
+    "HIGH": 1124,
     "LOW": 110,
     "MEDIUM": 510
   },
@@ -225,6 +225,31 @@
         "read-fence",
         "new-files",
         "runtime-canary"
+      ]
+    },
+    {
+      "id": "jvm-sandbox-couples-filesystem-and-network-isolation",
+      "title": "JVM sandboxing couples filesystem and network isolation.",
+      "category": "Sandbox & permissions",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/92609"
+      ],
+      "date_added": "2026-09-07",
+      "description": "A reported Claude Code 2.1.252 macOS sandbox setup found that enabling `sandbox.enabled` turns on filesystem containment and network proxying as a coupled unit. There is a documented `sandbox.filesystem.disabled` escape for keeping network isolation while disabling filesystem isolation, but no inverse setting for keeping filesystem isolation while bypassing network isolation. In the JVM case, `curl` could use the injected proxy environment, but Java's HTTP client ignored those variables and even an explicit `-Dhttps.proxyHost` setup could not open a socket to the localhost sandbox proxy. The same report found JUnit `@TempDir` failures because Java's default `java.io.tmpdir` pointed at the host Darwin temp directory rather than the sandbox-managed `$TMPDIR`, so most tests failed before running until the temp directory was overridden.",
+      "workaround": "Do not assume Claude Code's sandbox can currently provide filesystem-only isolation for JVM projects. If networked integration tests must run, either execute them outside the Claude Code sandbox behind separate OS, container, firewall, or proxy controls, or prove in the exact session that the runtime can reach the injected sandbox proxy and that egress policy still matches your intent. For Java test suites, set `-Djava.io.tmpdir=\"$TMPDIR\"` or otherwise force temp files into a path that a same-session write canary proves is writable. Keep `permissions.blockReadsOutsideWorkingDirectories` scoped to file-tool reads only; it is not a replacement for Bash or runtime filesystem containment.",
+      "tags": [
+        "sandbox",
+        "jvm",
+        "java",
+        "network",
+        "filesystem",
+        "proxy",
+        "tmpdir",
+        "junit",
+        "macos",
+        "egress"
       ]
     },
     {
@@ -26348,27 +26373,27 @@
     }
   ],
   "status_summary": {
-    "open": 1901,
+    "open": 1902,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 172,
-    "high": 1123,
+    "high": 1124,
     "low": 110,
     "medium": 510
   },
   "lastUpdated": "2026-09-07",
   "stats": {
-    "total": 1915,
+    "total": 1916,
     "critical": 172,
-    "high": 1123,
+    "high": 1124,
     "medium": 510,
     "low": 110,
-    "open": 1901,
+    "open": 1902,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-09-07",
-  "total": 1915
+  "total": 1916
 }
