@@ -1,6 +1,6 @@
 {
   "version": "0.13.0",
-  "count": 1916,
+  "count": 1917,
   "categories": {
     "Hook behavior & events": 244,
     "Permission system": 178,
@@ -9,8 +9,8 @@
     "Subagent & spawned agents": 87,
     "Desktop & IDE integration": 64,
     "Security & trust boundaries": 50,
+    "Sandbox & permissions": 43,
     "Cowork & remote": 42,
-    "Sandbox & permissions": 42,
     "TUI & display": 41,
     "Configuration behavior": 36,
     "Platform & compatibility": 35,
@@ -197,7 +197,7 @@
   },
   "severity_counts": {
     "CRITICAL": 172,
-    "HIGH": 1124,
+    "HIGH": 1125,
     "LOW": 110,
     "MEDIUM": 510
   },
@@ -250,6 +250,31 @@
         "junit",
         "macos",
         "egress"
+      ]
+    },
+    {
+      "id": "linux-denywrite-mid-path-globs-can-fail-open",
+      "title": "Linux denyWrite mid-path globs can fail open.",
+      "category": "Sandbox & permissions",
+      "severity": "HIGH",
+      "status": "open",
+      "issues": [
+        "https://github.com/anthropics/claude-code/issues/92684"
+      ],
+      "date_added": "2026-09-07",
+      "description": "A reported Claude Code 2.1.263 Linux sandbox setup found that `sandbox.filesystem.denyWrite` enforced literal paths and trailing subtree globs such as `/workspace/docs/**`, but silently ignored mid-path wildcard rules such as `/workspace/**/probe.txt` and `/workspace/*/probe.txt`. The same pattern shapes were enforced by `sandbox.filesystem.denyRead`, and equivalent `permissions.deny` rules could block the built-in Write tool while a Bash subprocess still wrote the protected path. `/status` and `claude doctor` showed only a broad glob-support warning, so a config can look active and pass tool-layer tests while the subprocess filesystem boundary is missing.",
+      "workaround": "Do not use mid-path wildcards in `sandbox.filesystem.denyWrite` as a load-bearing Linux subprocess boundary until the installed Claude Code version proves they are enforced. Prefer literal paths, trailing subtree denies, generated per-repo rules, or OS/container read-only mounts for git hooks, `.envrc`, package config, and other host-executed files. After changing sandbox settings, run same-session Bash write canaries for every protected path shape and fail closed if a supposedly denied target is writable. Treat `/status` or `claude doctor` glob warnings as security-relevant even when the Write/Edit tool layer appears to deny the same path.",
+      "tags": [
+        "linux",
+        "sandbox",
+        "denywrite",
+        "filesystem",
+        "glob",
+        "wildcards",
+        "bash",
+        "subprocess",
+        "fail-open",
+        "runtime-canary"
       ]
     },
     {
@@ -26373,27 +26398,27 @@
     }
   ],
   "status_summary": {
-    "open": 1902,
+    "open": 1903,
     "fixed": 13,
     "mitigated": 1
   },
   "severities": {
     "critical": 172,
-    "high": 1124,
+    "high": 1125,
     "low": 110,
     "medium": 510
   },
   "lastUpdated": "2026-09-07",
   "stats": {
-    "total": 1916,
+    "total": 1917,
     "critical": 172,
-    "high": 1124,
+    "high": 1125,
     "medium": 510,
     "low": 110,
-    "open": 1902,
+    "open": 1903,
     "fixed": 13,
     "mitigated": 1
   },
   "last_updated": "2026-09-07",
-  "total": 1916
+  "total": 1917
 }
