@@ -221,7 +221,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">1917</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-09-07.</span></p>
+        <p class="subtitle"><span id="total-count">1918</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-09-07.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -21748,6 +21748,18 @@
                         <!-- workaround:custom-claude-code-tmpdir-can-be-read-only-in-sandbox -->
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> When using `sandbox.enabled` with a custom `CLAUDE_CODE_TMPDIR`, prove the effective temp directory in the same launch mode before running builds, tests, nested sessions, or unattended work. Use a harmless canary such as creating and deleting a directory under `$TMPDIR`, and fail closed if it returns `EROFS`, an empty path, or a socket bind failure. Prefer a workspace-local or otherwise proven writable temp root for sandboxed jobs until the installed Claude Code version expands the temp allowlist correctly. Keep an out-of-band shell path for reverting `~/.claude/settings.json`, and do not disable `failIfUnavailable` merely to work around this class of failure.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/92590" target="_blank">#92590</a></div>
+        </div>
+        <div class="kl-entry" data-category="MCP &amp; plugins" data-issues="92729" id="mcp-empty-resources-capability-can-be-treated-as-unsupported" data-severity="medium" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1918</span>
+                <span class="kl-cat">MCP &amp; plugins</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#d97706;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
+            </div>
+            <h3>MCP resources capability advertised as an empty object can be treated as unsupported.</h3>
+            <p>A reported Claude Code Desktop Code-tab setup found that a Streamable HTTP MCP server advertising `capabilities.resources: {}` and `capabilities.tools: {}` could connect successfully and expose tools while Claude Code treated the same server as having no resource support. Direct JSON-RPC probes showed `initialize`, `resources/list`, `resources/read`, and `resources/templates/list` returning valid results, and Claude Code logs showed the client parsed the matching `initialize` response. The reporter narrowed the observable difference to capability object shape: a stdio server with `resources: {&quot;listChanged&quot;: false}` listed resources, while the affected Rust `rmcp` server with `resources: {}` produced `No resources found` and `Server &quot;&lt;name&gt;&quot; does not support resources` from Claude Code&#x27;s resource tools.</p>
+                        <!-- workaround:mcp-empty-resources-capability-can-be-treated-as-unsupported -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not treat raw MCP wire-level `resources/list` success as proof that Claude Code can read those resources. After adding or updating an MCP server, test `ListMcpResourcesTool` and `ReadMcpResourceTool` from a Claude Code session, not only curl or SDK probes. If an affected server advertises `resources: {}` and Claude Code reports no support, try adding explicit optional capability fields such as `listChanged: false`, bridging through a transport/server implementation known to expose resources in Claude Code, or falling back to MCP tools that return the required data until the client accepts empty capability objects.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/92729" target="_blank">#92729</a></div>
         </div>
         <!-- END GENERATED LIMITATIONS -->
 <footer>

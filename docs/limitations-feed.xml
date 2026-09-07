@@ -63,6 +63,14 @@
     <category term="Sandbox &amp; permissions"/>
   </entry>
   <entry>
+    <title>[MEDIUM] MCP resources capability advertised as an empty object can be treated as unsupported.</title>
+    <id>https://framework.boucle.sh/limitations.html#mcp-empty-resources-capability-can-be-treated-as-unsupported</id>
+    <link href="https://framework.boucle.sh/limitations.html#mcp-empty-resources-capability-can-be-treated-as-unsupported"/>
+    <updated>2026-09-07T00:00:00Z</updated>
+    <summary>A reported Claude Code Desktop Code-tab setup found that a Streamable HTTP MCP server advertising `capabilities.resources: {}` and `capabilities.tools: {}` could connect successfully and expose tools while Claude Code treated the same server as having no resource support. Direct JSON-RPC probes showed `initialize`, `resources/list`, `resources/read`, and `resources/templates/list` returning valid results, and Claude Code logs showed the client parsed the matching `initialize` response. The reporter narrowed the observable difference to capability object shape: a stdio server with `resources: {&quot;listChanged&quot;: false}` listed resources, while the affected Rust `rmcp` server with `resources: {}` produced `No resources found` and `Server &quot;&lt;name&gt;&quot; does not support resources` from Claude Code&#x27;s resource tools.</summary>
+    <category term="MCP &amp; plugins"/>
+  </entry>
+  <entry>
     <title>[HIGH] Sibling repository worktrees require broad additionalDirectories grants.</title>
     <id>https://framework.boucle.sh/limitations.html#sibling-repository-worktrees-require-broad-additionaldirectories-grants</id>
     <link href="https://framework.boucle.sh/limitations.html#sibling-repository-worktrees-require-broad-additionaldirectories-grants"/>
@@ -157,13 +165,5 @@
     <updated>2026-09-07T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.261 Windows Git Bash CLI setup showed a project `UserPromptSubmit` hook correctly listed by `/hooks`, loaded from `.claude/settings.json`, and passing a direct stdin-payload test with the expected exit 2 block behavior. In fresh interactive sessions, however, typed prompts containing a hardcoded-looking secret reached the model normally, appeared in the JSONL transcript as user messages, and produced assistant responses with token usage. A follow-up ruled out the older early-session race theory: sending an innocuous warm-up prompt first still left the second prompt unguarded. This makes prompt-time credential or policy hooks look installed and testable while real interactive submissions bypass them silently in that client environment.</summary>
     <category term="Hook behavior &amp; events"/>
-  </entry>
-  <entry>
-    <title>[HIGH] /permissions can drop lowercase tool-name rules while adding unrelated rules.</title>
-    <id>https://framework.boucle.sh/limitations.html#permissions-editor-can-drop-lowercase-tool-rules</id>
-    <link href="https://framework.boucle.sh/limitations.html#permissions-editor-can-drop-lowercase-tool-rules"/>
-    <updated>2026-09-07T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.261 macOS project-level settings file had existing `permissions.ask` and `permissions.deny` rules written with lowercase tool names such as `bash(git push *)` and `bash(rm -rf *)`. After the user opened `/permissions` and added an unrelated correctly cased `Bash(...)` rule, Claude Code rewrote `.claude/settings.json` with the new rule but silently removed the pre-existing lowercase ask and deny entries. The narrow risk is not only that lowercase rules may be invalid: the discoverable permissions editor can turn a validation problem into silent policy data loss, including loss of a dangerous-command deny rule, without warning, confirmation, or an audit log.</summary>
-    <category term="Permission system"/>
   </entry>
 </feed>
