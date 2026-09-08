@@ -4,13 +4,21 @@
   <link href="https://framework.boucle.sh/limitations.html" rel="alternate"/>
   <link href="https://framework.boucle.sh/limitations-feed.xml" rel="self"/>
   <id>https://framework.boucle.sh/limitations-feed.xml</id>
-  <updated>2026-09-07T00:00:00Z</updated>
+  <updated>2026-09-08T00:00:00Z</updated>
   <author><name>Boucle</name></author>
+  <entry>
+    <title>[CRITICAL] Demo mode can suppress the trust prompt and disable hooks.</title>
+    <id>https://framework.boucle.sh/limitations.html#demo-mode-can-suppress-trust-prompt-and-disable-hooks</id>
+    <link href="https://framework.boucle.sh/limitations.html#demo-mode-can-suppress-trust-prompt-and-disable-hooks"/>
+    <updated>2026-09-08T00:00:00Z</updated>
+    <summary>A reproduced Claude Code 2.1.260 through 2.1.263 report found that setting `IS_DEMO` in the global settings environment can skip the workspace trust prompt in newly initialized git repositories. When the workspace remains untrusted, global hooks, the status line, project-scoped permission allows, and plugin installation can be skipped without an ordinary warning. The reporter also found that `/doctor` and `claude doctor` reported a healthy setup because their hook checks looked at prior hook executions across other sessions rather than whether hooks were enabled in the current workspace.</summary>
+    <category term="Security &amp; trust boundaries"/>
+  </entry>
   <entry>
     <title>[HIGH] Positive read allowlists are not expressible.</title>
     <id>https://framework.boucle.sh/limitations.html#positive-read-allowlists-are-not-expressible</id>
     <link href="https://framework.boucle.sh/limitations.html#positive-read-allowlists-are-not-expressible"/>
-    <updated>2026-09-07T00:00:00Z</updated>
+    <updated>2026-09-08T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.263 setup found no single permission syntax for declaring that only a specific file or subtree may be read. A broad `Read(/**)` deny overrides narrower `Read(...)` allows because deny rules take precedence over allow rules, so users must enumerate every disallowed sibling path instead of defining a positive allowlist. That inverse list is brittle: new project files are readable by default until added to the deny list, adding one exception can require rewriting a whole directory section, and ordinary Bash commands that read files bypass the Read/Grep/Glob rule surface unless separately constrained by a real path-based sandbox.</summary>
     <category term="Permission system"/>
   </entry>
@@ -18,7 +26,7 @@
     <title>[HIGH] JVM sandboxing couples filesystem and network isolation.</title>
     <id>https://framework.boucle.sh/limitations.html#jvm-sandbox-couples-filesystem-and-network-isolation</id>
     <link href="https://framework.boucle.sh/limitations.html#jvm-sandbox-couples-filesystem-and-network-isolation"/>
-    <updated>2026-09-07T00:00:00Z</updated>
+    <updated>2026-09-08T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.252 macOS sandbox setup found that enabling `sandbox.enabled` turns on filesystem containment and network proxying as a coupled unit. There is a documented `sandbox.filesystem.disabled` escape for keeping network isolation while disabling filesystem isolation, but no inverse setting for keeping filesystem isolation while bypassing network isolation. In the JVM case, `curl` could use the injected proxy environment, but Java&#x27;s HTTP client ignored those variables and even an explicit `-Dhttps.proxyHost` setup could not open a socket to the localhost sandbox proxy. The same report found JUnit `@TempDir` failures because Java&#x27;s default `java.io.tmpdir` pointed at the host Darwin temp directory rather than the sandbox-managed `$TMPDIR`, so most tests failed before running until the temp directory was overridden.</summary>
     <category term="Sandbox &amp; permissions"/>
   </entry>
@@ -26,7 +34,7 @@
     <title>[HIGH] Linux denyWrite mid-path globs can fail open.</title>
     <id>https://framework.boucle.sh/limitations.html#linux-denywrite-mid-path-globs-can-fail-open</id>
     <link href="https://framework.boucle.sh/limitations.html#linux-denywrite-mid-path-globs-can-fail-open"/>
-    <updated>2026-09-07T00:00:00Z</updated>
+    <updated>2026-09-08T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.263 Linux sandbox setup found that `sandbox.filesystem.denyWrite` enforced literal paths and trailing subtree globs such as `/workspace/docs/**`, but silently ignored mid-path wildcard rules such as `/workspace/**/probe.txt` and `/workspace/*/probe.txt`. The same pattern shapes were enforced by `sandbox.filesystem.denyRead`, and equivalent `permissions.deny` rules could block the built-in Write tool while a Bash subprocess still wrote the protected path. `/status` and `claude doctor` showed only a broad glob-support warning, so a config can look active and pass tool-layer tests while the subprocess filesystem boundary is missing.</summary>
     <category term="Sandbox &amp; permissions"/>
   </entry>
@@ -34,7 +42,7 @@
     <title>[HIGH] Plugin-native PreToolUse hooks can fail open across session modes.</title>
     <id>https://framework.boucle.sh/limitations.html#plugin-native-pretooluse-hooks-can-fail-open</id>
     <link href="https://framework.boucle.sh/limitations.html#plugin-native-pretooluse-hooks-can-fail-open"/>
-    <updated>2026-09-07T00:00:00Z</updated>
+    <updated>2026-09-08T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.263 Windows setup found that PreToolUse hooks auto-discovered from an installed plugin&#x27;s `hooks/hooks.json` were not enforced the same way as hooks declared directly in `settings.json`. In the reported matrix, a settings-declared exit-2 hook blocked interactively, while a plugin-native exit-2 hook blocked only in print mode and did not block an interactive session. A plugin-native hook returning the documented JSON `hookSpecificOutput.permissionDecision: &quot;deny&quot;` shape reportedly failed to block in both interactive and print mode, even though the hook module, dispatcher pipeline, plugin bootstrap subprocess, and cached plugin copy all produced the expected deny JSON outside the runtime.</summary>
     <category term="MCP &amp; plugin issues"/>
   </entry>
@@ -42,7 +50,7 @@
     <title>[HIGH] OAuth account email can enter model context and tool output.</title>
     <id>https://framework.boucle.sh/limitations.html#oauth-account-email-can-enter-model-context-and-tool-output</id>
     <link href="https://framework.boucle.sh/limitations.html#oauth-account-email-can-enter-model-context-and-tool-output"/>
-    <updated>2026-09-07T00:00:00Z</updated>
+    <updated>2026-09-08T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.220 through 2.1.263 OAuth setup found that the user&#x27;s account email was injected into the model context as a `userEmail` block, with no documented dedicated setting to suppress it. Users reported the model printing the address in ordinary output and using it to override an existing noreply git identity in commits. Later reports said newer builds added an instruction limiting how the model should use the email, but the value still remained in context for OAuth-authenticated sessions, including when `IS_DEMO=1` hid display surfaces such as headers or status output.</summary>
     <category term="Security &amp; trust boundaries"/>
   </entry>
@@ -50,7 +58,7 @@
     <title>[HIGH] Write/Edit validation 401s can bypass hook observability.</title>
     <id>https://framework.boucle.sh/limitations.html#write-edit-validation-401-can-bypass-hook-observability</id>
     <link href="https://framework.boucle.sh/limitations.html#write-edit-validation-401-can-bypass-hook-observability"/>
-    <updated>2026-09-07T00:00:00Z</updated>
+    <updated>2026-09-08T00:00:00Z</updated>
     <summary>A reported Claude Code Desktop 2.1.258 Windows child session found that built-in Write and Edit calls to script-like or extension-less targets were denied by an internal permission-validation path with a 401 `API key is invalid` error, while a small set of text and data extensions still passed. The denial carried `toolDenialKind: permission-rule`, happened even under bypassPermissions, and occurred before configured PreToolUse hooks ran. In affected sessions, Auto mode could not approve actions through the same path, and users were pushed toward Bash fallbacks even though those shell writes are a different enforcement surface from dedicated Write/Edit hooks.</summary>
     <category term="Permission system"/>
   </entry>
@@ -58,7 +66,7 @@
     <title>[HIGH] Project additionalDirectories can be excluded from the read fence.</title>
     <id>https://framework.boucle.sh/limitations.html#project-additionaldirectories-can-be-excluded-from-read-fence</id>
     <link href="https://framework.boucle.sh/limitations.html#project-additionaldirectories-can-be-excluded-from-read-fence"/>
-    <updated>2026-09-07T00:00:00Z</updated>
+    <updated>2026-09-08T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.263 macOS setup enabled `permissions.blockReadsOutsideWorkingDirectories` and configured `permissions.additionalDirectories` in both user settings and trusted project or local settings. The session header listed all configured directories, but Read, Grep, and Glob refused paths from the project/local entries and named only the cwd plus user-level additional directories as allowed. The Bash sandbox read allow-list showed the same narrower set, so shell reads under the project-declared directories failed until the user ran `/add-dir` interactively in that session.</summary>
     <category term="Permission system"/>
   </entry>
@@ -66,7 +74,7 @@
     <title>[HIGH] Custom CLAUDE_CODE_TMPDIR can be read-only inside the sandbox.</title>
     <id>https://framework.boucle.sh/limitations.html#custom-claude-code-tmpdir-can-be-read-only-in-sandbox</id>
     <link href="https://framework.boucle.sh/limitations.html#custom-claude-code-tmpdir-can-be-read-only-in-sandbox"/>
-    <updated>2026-09-07T00:00:00Z</updated>
+    <updated>2026-09-08T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.263 Linux sandbox setup found that setting `CLAUDE_CODE_TMPDIR` to a directory under `$HOME` could make sandboxed Bash expose that path as `$TMPDIR` while still denying writes to it. Harmless temp-file creation with `mktemp -d` failed with a read-only filesystem error, test suites that depended on temporary directories cascaded into unrelated-looking failures, and nested Claude Code sessions could not create their control socket. The reporter noted that `failIfUnavailable: true` correctly stopped the nested session instead of continuing unsandboxed, but the broken temp path also made in-session repair hard because writing the settings change under `~/.claude` was denied by the same sandbox.</summary>
     <category term="Sandbox &amp; permissions"/>
   </entry>
@@ -74,7 +82,7 @@
     <title>[MEDIUM] MCP resources capability advertised as an empty object can be treated as unsupported.</title>
     <id>https://framework.boucle.sh/limitations.html#mcp-empty-resources-capability-can-be-treated-as-unsupported</id>
     <link href="https://framework.boucle.sh/limitations.html#mcp-empty-resources-capability-can-be-treated-as-unsupported"/>
-    <updated>2026-09-07T00:00:00Z</updated>
+    <updated>2026-09-08T00:00:00Z</updated>
     <summary>A reported Claude Code Desktop Code-tab setup found that a Streamable HTTP MCP server advertising `capabilities.resources: {}` and `capabilities.tools: {}` could connect successfully and expose tools while Claude Code treated the same server as having no resource support. Direct JSON-RPC probes showed `initialize`, `resources/list`, `resources/read`, and `resources/templates/list` returning valid results, and Claude Code logs showed the client parsed the matching `initialize` response. The reporter narrowed the observable difference to capability object shape: a stdio server with `resources: {&quot;listChanged&quot;: false}` listed resources, while the affected Rust `rmcp` server with `resources: {}` produced `No resources found` and `Server &quot;&lt;name&gt;&quot; does not support resources` from Claude Code&#x27;s resource tools.</summary>
     <category term="MCP &amp; plugins"/>
   </entry>
@@ -82,7 +90,7 @@
     <title>[HIGH] Sibling repository worktrees require broad additionalDirectories grants.</title>
     <id>https://framework.boucle.sh/limitations.html#sibling-repository-worktrees-require-broad-additionaldirectories-grants</id>
     <link href="https://framework.boucle.sh/limitations.html#sibling-repository-worktrees-require-broad-additionaldirectories-grants"/>
-    <updated>2026-09-07T00:00:00Z</updated>
+    <updated>2026-09-08T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.259 macOS multi-agent layout put each subagent in a sibling git worktree such as `../repo-wt/&lt;name&gt;` so agents do not share one checkout. Because subagents inherit the parent session working directory and the Agent tool has no cwd parameter, Edit and Write calls against those sibling worktrees are treated as outside the working directory even when `git rev-parse --git-common-dir` would identify them as the same repository. In acceptEdits mode this can prompt for every edit, while auto mode routes the edit through the permission classifier instead of treating it as an in-project write. The documented workaround, `permissions.additionalDirectories`, grants standing access to a broader parent tree and can outlive the temporary agent that needed it.</summary>
     <category term="Worktrees &amp; isolation"/>
   </entry>
@@ -90,7 +98,7 @@
     <title>[HIGH] PostToolUse stdin payload can leak to a project-root file on Windows Git Bash.</title>
     <id>https://framework.boucle.sh/limitations.html#posttooluse-stdin-payload-can-leak-to-project-root-file-on-windows-git-bash</id>
     <link href="https://framework.boucle.sh/limitations.html#posttooluse-stdin-payload-can-leak-to-project-root-file-on-windows-git-bash"/>
-    <updated>2026-09-07T00:00:00Z</updated>
+    <updated>2026-09-08T00:00:00Z</updated>
     <summary>A reported Claude Code Windows setup with Git Bash saw intermittent stray files appear in the project root with bare small-integer names while a `PostToolUse` hook was registered for Bash and write-family tools. The newest captured file contained the complete raw JSON envelope that should have been delivered to the hook on stdin, including `session_id`, `transcript_path`, `hook_event_name: &quot;PostToolUse&quot;`, `tool_name`, `tool_input`, and `tool_response`. The reporter says the hook script itself only reads stdin and logs internally, replaying the captured payload through it creates no files, and every observed occurrence coincided with a Bash tool call.</summary>
     <category term="Hook behavior &amp; events"/>
   </entry>
@@ -98,7 +106,7 @@
     <title>[HIGH] Sandbox policy can diverge from settings.json at runtime.</title>
     <id>https://framework.boucle.sh/limitations.html#sandbox-policy-can-diverge-from-settings-json-at-runtime</id>
     <link href="https://framework.boucle.sh/limitations.html#sandbox-policy-can-diverge-from-settings-json-at-runtime"/>
-    <updated>2026-09-07T00:00:00Z</updated>
+    <updated>2026-09-08T00:00:00Z</updated>
     <summary>A reported Claude Code macOS setup found that the effective sandbox policy did not match an unchanged `~/.claude/settings.json`. A configured `sandbox.filesystem.allowWrite` glob for `~/repos/vaults/*-kb` still refused writes to a matching path, while a plain-directory allowlist case succeeded. In the same session, `gh *` was listed in `sandbox.excludedCommands`, but some GitHub CLI GraphQL operations still appeared to run through the filtering proxy before later succeeding without any settings change. The policy description shown to the model also changed mid-session even though the settings file had not been modified.</summary>
     <category term="Sandbox &amp; permissions"/>
   </entry>
@@ -106,7 +114,7 @@
     <title>[HIGH] Remote Control opt-out can be ignored and draft into the live input.</title>
     <id>https://framework.boucle.sh/limitations.html#remote-control-opt-out-can-be-ignored-and-draft-into-input</id>
     <link href="https://framework.boucle.sh/limitations.html#remote-control-opt-out-can-be-ignored-and-draft-into-input"/>
-    <updated>2026-09-07T00:00:00Z</updated>
+    <updated>2026-09-08T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.222 Linux setup found that `disableRemoteControl: true` in user settings did not stop long-lived CLI sessions from appearing reachable in the Claude app Code / Remote Control view. The same report says the app could place an AI-generated suggested reply into the real terminal input box. For automation that drives the input buffer directly, that hidden remote channel can concatenate unvetted text with slash commands or other scripted input, corrupting maintenance commands and risking accidental submission of text the user did not type.</summary>
     <category term="Cowork &amp; remote"/>
   </entry>
@@ -114,7 +122,7 @@
     <title>[HIGH] Plugin dependency load failures can hide missing hooks at startup.</title>
     <id>https://framework.boucle.sh/limitations.html#plugin-dependency-load-failures-can-hide-missing-hooks-at-startup</id>
     <link href="https://framework.boucle.sh/limitations.html#plugin-dependency-load-failures-can-hide-missing-hooks-at-startup"/>
-    <updated>2026-09-07T00:00:00Z</updated>
+    <updated>2026-09-08T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.261 macOS interactive session found that when an installed plugin fails to load because a declared dependency is missing, the startup screen can still look normal. The plugin&#x27;s commands and hooks are absent, while the detected `dependency-unsatisfied` error appears only inside `/plugins`, under Installed or Errors. Headless `claude -p` reportedly printed no stdout or stderr warning for the broken plugin state, and reinstalling the already-broken plugin exited zero with a success line. Users who rely on plugin-delivered safety hooks can therefore start work with those hooks missing unless they explicitly inspect plugin health.</summary>
     <category term="MCP &amp; plugin issues"/>
   </entry>
@@ -122,7 +130,7 @@
     <title>[HIGH] Auto-mode classifier denials can coach tool substitution.</title>
     <id>https://framework.boucle.sh/limitations.html#auto-mode-classifier-denials-can-coach-tool-substitution</id>
     <link href="https://framework.boucle.sh/limitations.html#auto-mode-classifier-denials-can-coach-tool-substitution"/>
-    <updated>2026-09-07T00:00:00Z</updated>
+    <updated>2026-09-08T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.261 WSL2 auto-mode session found that a classifier denial can still append guidance telling the agent it may try another naturally related tool, such as using `head` instead of `cat`, after the classifier deliberately blocked the action. The reporter contrasted this with the separate conversation-refusal path, which now tells the agent not to reroute around the refusal. When the classifier blocked the goal rather than just one command spelling, the substitution coaching weakened the control and encouraged repeated denied attempts.</summary>
     <category term="Permission system"/>
   </entry>
@@ -130,7 +138,7 @@
     <title>[HIGH] Cowork-created scheduled tasks can run cloud-only despite a device requirement.</title>
     <id>https://framework.boucle.sh/limitations.html#cowork-created-scheduled-tasks-can-run-cloud-only-despite-device-requirement</id>
     <link href="https://framework.boucle.sh/limitations.html#cowork-created-scheduled-tasks-can-run-cloud-only-despite-device-requirement"/>
-    <updated>2026-09-07T00:00:00Z</updated>
+    <updated>2026-09-08T00:00:00Z</updated>
     <summary>A reported Claude Cowork macOS setup found that creating a scheduled task through the remote MCP create_trigger path with requires_local_device enabled can still produce an enabled task that runs in the cloud only. The response notes that device binding was not completed, but the task is created and scheduled anyway, and the Desktop UI does not let the user add the local-device requirement afterwards. In the reported audit case, the cloud-routed task saw only the API-created scheduled tasks while the Desktop app showed additional local tasks, so an automation could record an incomplete task inventory as if it were complete.</summary>
     <category term="Cowork &amp; remote"/>
   </entry>
@@ -138,7 +146,7 @@
     <title>[HIGH] Desktop Code tabs can disable SendMessage for subagents.</title>
     <id>https://framework.boucle.sh/limitations.html#desktop-code-tabs-can-disable-sendmessage-for-subagents</id>
     <link href="https://framework.boucle.sh/limitations.html#desktop-code-tabs-can-disable-sendmessage-for-subagents"/>
-    <updated>2026-09-07T00:00:00Z</updated>
+    <updated>2026-09-08T00:00:00Z</updated>
     <summary>A reported Claude Desktop 1.46388.x regression found that Code-tab sessions can be launched with `--disallowedTools SendMessage`, removing the CLI-native `SendMessage` tool from the session and its subagents. The desktop replacement named in the denial path addresses desktop sessions by `session_id`, but the `Agent` tool still returns subagent IDs and instructs callers to resume them with `SendMessage`. Multiple reports across macOS and Windows traced the block to the Desktop app launch path rather than the standalone CLI, leaving affected multi-agent workflows unable to send follow-up instructions to already-running subagents or some peer sessions.</summary>
     <category term="Agent orchestration"/>
   </entry>
@@ -146,7 +154,7 @@
     <title>[MEDIUM] Bash permission-denied messages can hide command and rule context.</title>
     <id>https://framework.boucle.sh/limitations.html#bash-permission-denials-can-hide-command-and-rule-context</id>
     <link href="https://framework.boucle.sh/limitations.html#bash-permission-denials-can-hide-command-and-rule-context"/>
-    <updated>2026-09-07T00:00:00Z</updated>
+    <updated>2026-09-08T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.260 macOS setup found that when a `permissions.deny` rule blocked a multi-stage Bash command, the denial shown to the model often quoted only a sub-command excerpt rather than the full command that was issued. The same message did not identify the matching deny rule or the settings file where it came from. In real daily use, this reportedly caused the model and human readers to misattribute the block to another control, such as a classifier or `PreToolUse` hook, before later tracing it to a Read deny rule being applied through Bash-recognized file commands.</summary>
     <category term="Permission system"/>
   </entry>
@@ -154,16 +162,8 @@
     <title>[HIGH] Plugin cache updates can replicate untracked files across versions.</title>
     <id>https://framework.boucle.sh/limitations.html#plugin-cache-can-replicate-untracked-files-across-versions</id>
     <link href="https://framework.boucle.sh/limitations.html#plugin-cache-can-replicate-untracked-files-across-versions"/>
-    <updated>2026-09-07T00:00:00Z</updated>
+    <updated>2026-09-08T00:00:00Z</updated>
     <summary>A reported Claude Code 2.1.261 macOS plugin-cache repro found that when a marketplace plugin updated, the new version directory appeared to be seeded from the previous version directory before fetched content was overlaid. Untracked, gitignored, or session-written files under the old cache, including a stray `node_modules`, were copied into later version directories even though the plugin remote was clean and the plugin declared no hooks or install scripts. One once-written dependency tree reportedly expanded into 13 version directories and about 1.2 GB of retained cache data.</summary>
     <category term="MCP &amp; plugin issues"/>
-  </entry>
-  <entry>
-    <title>[CRITICAL] Malformed sandbox deny-list entries can disable deny rules and hooks.</title>
-    <id>https://framework.boucle.sh/limitations.html#malformed-sandbox-deny-list-can-disable-deny-rules-and-hooks</id>
-    <link href="https://framework.boucle.sh/limitations.html#malformed-sandbox-deny-list-can-disable-deny-rules-and-hooks"/>
-    <updated>2026-09-07T00:00:00Z</updated>
-    <summary>A reported Claude Code 2.1.261 Linux WSL2 repro found that putting a non-string value inside `sandbox.filesystem.denyRead` or `sandbox.filesystem.denyWrite`, such as `{ &quot;path&quot;: &quot;/abs/path&quot; }` or `42`, made the CLI accept the settings file, exit zero, and print no warning while applying neither `permissions.deny` nor `PreToolUse` hooks for the run. The same file enforced correctly when the deny-list entry was a string, and deleting the `sandbox` key entirely restored the deny rule and hook path. A settings block that appears to add sandbox restrictions can therefore make the session less restrictive than omitting the block, including allowing a denied `Read` to return covered file contents to the model while the hook witness file proves the hook never ran.</summary>
-    <category term="Sandbox &amp; permissions"/>
   </entry>
 </feed>
