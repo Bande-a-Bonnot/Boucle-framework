@@ -237,6 +237,21 @@ the [scripted checks guide](CI.md).
 For help choosing what to repair first from the copy/paste summary, use the
 [safety summary triage guide](TRIAGE.md).
 
+If you only need to decide whether a session can proceed, run the summary form
+and read the `Verify:` and `Boundary:` lines first:
+
+```sh
+repo_root="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+cd "$repo_root"
+curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash -s -- --verify --summary-only
+```
+
+| Summary line | Decision |
+|--------------|----------|
+| `Verify: 0 FAIL-OPEN | N payload checks | 0 skipped` | The checked `PreToolUse` hooks blocked their representative payloads. Start a fresh Claude Code session from this root, then proceed while keeping any residual warnings in the record. |
+| `Verify: not run`, `no hooks found`, or `0 payload checks` | The hook layer is not proven. Install or repair hooks before relying on them. |
+| `FAIL-OPEN` or `skipped PreToolUse` | Treat the boundary as failed for sensitive work. Repair the named hook or matcher, then rerun verification from the same root. |
+
 On native Windows, verify through the PowerShell installer instead of piping the
 Bash checker:
 
