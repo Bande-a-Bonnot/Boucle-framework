@@ -184,6 +184,9 @@ docs = {
         "public report shows its hooks and permissions can be inert outside `$HOME`",
         "Relative Bash hook path",
         "Repo-relative custom Bash hook commands can break after cwd drift",
+        "The base denominator is 120",
+        "If read-once is installed, the checker adds the",
+        "so that setup is scored out of 122",
         "github.com/anthropics/claude-code/issues/91226",
     ],
     repo / "tools" / "safety-check" / "TRIAGE.md": [
