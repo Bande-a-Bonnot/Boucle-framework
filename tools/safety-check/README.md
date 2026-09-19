@@ -341,6 +341,7 @@ Beyond the scored checks, safety-check detects platform bugs and configuration p
 | Plugin scope leak | Project-scoped plugins fire in all directories ([#41523](https://github.com/anthropics/claude-code/issues/41523)) |
 | MCP silent rejection | MCP tool calls silently rejected by parameter value ([#41528](https://github.com/anthropics/claude-code/issues/41528)) |
 | Bash cd+pipe deadlock | `cd /path && cmd \| filter` auto-backgrounded, session hangs ([#41509](https://github.com/anthropics/claude-code/issues/41509)) |
+| Relative Bash hook path | Repo-relative custom Bash hook commands can break after cwd drift; prefer absolute or verified project-rooted paths ([#91226](https://github.com/anthropics/claude-code/issues/91226)) |
 
 ### Hook event types scanned
 
