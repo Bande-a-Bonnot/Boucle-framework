@@ -51,6 +51,17 @@ descriptions, prompt text, or server URLs as a renewed approval event. A passing
 hook verifier proves local hooks still execute; it does not prove a remote MCP
 server kept the same instructions or tool surface.
 
+If you rely on a Stop hook to prove that work was pushed, also run this from the
+same checkout before amending, force-pushing, deleting branches, or reporting a
+session as safely published:
+
+```sh
+git rev-list HEAD --not --remotes --count
+```
+
+The expected value is `0`; a non-zero value means at least one local commit is
+not reachable from any remote ref.
+
 If this is a git checkout, move to the repo root first; otherwise stay in the
 directory you use for Claude Code:
 

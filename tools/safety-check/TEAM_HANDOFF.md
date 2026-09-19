@@ -59,6 +59,7 @@ Residual platform warnings:
 
 Next intended action: audit only / local fix / commit / push / public report
 Staged diff and destination reviewed separately: yes / no / not applicable
+Stop-hook git reachability count, if used as push proof: 0 / non-zero / not applicable
 Next recheck trigger:
 - Claude Code update / settings edit / hook edit / launch directory change / before risky automation
 ```
@@ -86,7 +87,9 @@ Code version and bounded safety summary were recorded before the update. If the
 next intended action is `commit`, `push`, or `public report`, inspect the staged
 diff, destination branch, and remote target separately before approval. Hook
 verification proves only the checked hook boundary, not that the pending
-publication is safe.
+publication is safe. If a Stop hook is being used as proof that commits were
+pushed, record `git rev-list HEAD --not --remotes --count` separately and expect
+`0` before amending, force-pushing, or deleting a branch.
 
 Use the [triage guide](TRIAGE.md) when the summary has multiple findings and
 you need a repair order.
