@@ -22062,11 +22062,12 @@
         "https://github.com/anthropics/claude-code/issues/83490",
         "https://github.com/anthropics/claude-code/issues/83924",
         "https://github.com/anthropics/claude-code/issues/69586",
-        "https://github.com/anthropics/claude-code/issues/82624"
+        "https://github.com/anthropics/claude-code/issues/82624",
+        "https://github.com/anthropics/claude-code/issues/95524"
       ],
       "date_added": "2026-08-04",
-      "description": "Reports against Claude Code Remote's `stop-hook-git-check.sh` show it computing local work from `$upstream..HEAD`, where `$upstream` can be a stale same-named remote-tracking branch. After a PR merge, repointing the working branch at the updated default branch can place GitHub's merge commit inside that range. The hook may then ask the agent to amend a published merge commit or push a branch that is already represented on `origin/main`, even though the commit is not local unpublished work.",
-      "workaround": "Before following Stop-hook git advice, verify whether the reported commits are absent from every remote ref with `git rev-list HEAD --not --remotes --count` and inspect the commit author/committer. Do not amend, reset-author, force-push, or recreate a deleted PR branch solely because the Stop hook reported `$upstream..HEAD` output after a merge. Prefer checks that scope to commits reachable from HEAD and from no remote ref."
+      "description": "Reports against Claude Code Remote's `stop-hook-git-check.sh` show it computing local work from `$upstream..HEAD`, where `$upstream` can be a stale same-named remote-tracking branch or fall back to an unset `origin/HEAD`. After a PR merge, repointing the working branch at the updated default branch can place GitHub's merge commit inside that range, so the hook may ask the agent to amend or push already-published work. In the opposite direction, when `origin/HEAD` is absent, the same range check can fail and be treated as zero unpushed commits, silently missing local work on a new branch.",
+      "workaround": "Before trusting Stop-hook git advice or silence, verify whether commits reachable from `HEAD` are absent from every remote ref with `git rev-list HEAD --not --remotes --count`, then inspect the commit author/committer and current branch state. Do not amend, reset-author, force-push, or recreate a deleted PR branch solely because the Stop hook reported `$upstream..HEAD` output after a merge. If a new branch has no upstream or `origin/HEAD` is unset, do not treat a silent hook pass as proof that all commits are pushed."
     },
     {
       "id": "pretooluse-updatedinput-conflicts-are-latency-races",
