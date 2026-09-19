@@ -864,6 +864,16 @@ Bash separately with out-of-scope canaries before committing automation output.
 
 **Hook ask/deny handling is still inconsistent across tools and versions**: `hookSpecificOutput.permissionDecision: "deny"` has improved, but it is not a universal guarantee across Claude Code surfaces, and `permissionDecision: "ask"` has also been reported as ignored for real MCP tool calls even when direct hook stdin tests pass. Several upstream issues still document cases where ask/deny handling is ignored or changes by tool/event type. That is why framework hooks that must hard-block dangerous actions use the most conservative path Claude Code currently respects most reliably: a human-readable reason on `stderr` plus `exit 2`, then we tell users to run `safety-check --verify` after install and after Claude Code updates. If you write custom hooks, do not assume a JSON ask or deny response alone is enough just because it works in one local test.
 
+**Relative Bash hook command paths can break after cwd changes**: If a custom
+`PreToolUse` Bash hook is registered as a repo-relative command such as
+`python3 scripts/guard.py`, a later Bash command that changes the session cwd
+can make Claude Code resolve the hook from the wrong directory
+([claude-code#91226](https://github.com/anthropics/claude-code/issues/91226)).
+For safety-critical hooks, prefer absolute command paths or paths rooted through
+a verified project variable, and run a harmless hook canary after workflows that
+change cwd. If hook launch starts failing with `ENOENT`, restart from a known
+project root rather than relying on the broken session.
+
 **Subagents may skip hook settings or hook execution**: Agents spawned via the Agent tool [don't consistently inherit permission settings](https://github.com/anthropics/claude-code/issues/37730), and a newer report shows a global `PreToolUse` Bash hook not firing for an Explore subagent's Bash call ([claude-code#78970](https://github.com/anthropics/claude-code/issues/78970)). Verify hook behavior in the exact subagent workflow before treating hooks as a hard boundary.
 
 **Hook stderr may leak your filesystem paths**: Claude Code's hook runner [prefixes stderr output with the raw command path](https://github.com/anthropics/claude-code/issues/41226), exposing details like `/Users/yourname/.claude/hooks/my-hook.sh` in the conversation. This comes from the platform's execution layer, not from the hooks. Our hooks use clean prefixes (`[bash-guard]`, `[file-guard]`, etc.) for debug messages and never expose filesystem paths in either stdout or stderr. Debug logging is opt-in per hook (e.g., `BASH_GUARD_LOG=1`).
