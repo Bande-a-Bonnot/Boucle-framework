@@ -53,6 +53,15 @@ The hook registers as a `PreToolUse` hook with `ExitWorktree` matcher. When Clau
 
 The hook auto-detects the base branch by checking `origin/main`, `origin/master`, `main`, then `master`. Override with the `base:` config directive if your repo uses a different default branch.
 
+The unpushed check compares `HEAD` with the local upstream ref. It does not run `git fetch` during `ExitWorktree`, so a stale remote-tracking ref can make an already-deleted remote branch look like safe proof that the commit exists remotely. Before treating a pass as final proof that work is recoverable, refresh refs and check all remote refs:
+
+```sh
+git fetch --prune --quiet
+git rev-list HEAD --not --remotes --count
+```
+
+A non-zero count means reachable local commits are not on any remote ref.
+
 ## Squash Merge Detection
 
 worktree-guard uses `git cherry` instead of raw SHA comparison for the unmerged commits check. This correctly handles squash merges: after `git merge --squash`, the original commits have different SHAs but identical patches. `git cherry` marks these as already-applied, so worktree-guard allows exit without a false warning.
@@ -68,6 +77,8 @@ This fixes the false positive described in [anthropics/claude-code#40137](https:
 **`--worktree --tmux` skips hooks entirely.** When Claude Code is launched with both `--worktree` and `--tmux`, it uses a separate codepath that [creates git worktrees directly](https://github.com/anthropics/claude-code/issues/39281), bypassing WorktreeCreate and WorktreeRemove hooks. worktree-guard cannot fire in this mode. Workaround: use `--worktree` without `--tmux`.
 
 **Stop hooks fail after worktree cleanup.** After a worktree is removed (post-merge), stop hooks [fail with ENOENT](https://github.com/anthropics/claude-code/issues/39432) because the session's CWD no longer exists. Node.js reports the error on `/bin/sh` rather than the missing CWD. This can prevent any cleanup hooks from running.
+
+**Unpushed checks depend on local remote-tracking refs.** worktree-guard avoids network fetches while Claude is trying to exit a worktree. If the upstream ref is stale, especially after a remote feature branch was deleted, the hook can see `HEAD` as already present on the upstream even though that ref no longer exists on the remote. Run `git fetch --prune --quiet` and compare `HEAD` against `--remotes` before deleting the worktree by hand or treating a clean exit as durable backup proof.
 
 **Worktree memory resolves to wrong project directory.** When Claude Code launches from a linked worktree, it uses `git rev-parse --git-common-dir` to derive the project path, which resolves to the main worktree's `.git` directory. This means [both worktrees share the same memory file](https://github.com/anthropics/claude-code/issues/39920), causing cross-contamination of project-specific memory. This is a Claude Code internal behavior that hooks cannot change.
 

@@ -352,7 +352,7 @@ Prevents direct commits to protected branches (main, master, production, release
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/worktree-guard/install.sh | bash
 ```
 
-When you use `claude -w`, exiting the session [silently deletes](https://github.com/anthropics/claude-code/issues/38287) the worktree branch and all its commits. This hook blocks exit when there are uncommitted changes, untracked files, unmerged commits, or unpushed commits. Uses `ExitWorktree` matcher so it only runs when actually leaving a worktree. Config via `.worktree-guard`. ~65 tests (bash + PowerShell).
+When you use `claude -w`, exiting the session [silently deletes](https://github.com/anthropics/claude-code/issues/38287) the worktree branch and all its commits. This hook blocks exit when there are uncommitted changes, untracked files, unmerged commits, or unpushed commits. Uses `ExitWorktree` matcher so it only runs when actually leaving a worktree. The unpushed check reads local upstream refs, so run `git fetch --prune --quiet` before relying on it as final reachability proof. Config via `.worktree-guard`. ~65 tests (bash + PowerShell).
 
 ### [session-log](tools/session-log/) - Audit trail for Claude Code sessions
 
@@ -870,13 +870,15 @@ Bash separately with out-of-scope canaries before committing automation output.
 
 **Internal git operations bypass all hooks**: Claude Code runs background git operations (fetch + reset) [programmatically every ~10 minutes](https://github.com/anthropics/claude-code/issues/40710) without spawning an external `git` binary or making a tool call. Since hooks only fire on tool calls, git-safe and all other hooks are blind to these operations. This can silently destroy uncommitted changes to tracked files. Workaround: use git worktrees (immune to resets in the main checkout) or commit frequently. If you use `claude -w`, also install [worktree-guard](tools/worktree-guard/) before relying on worktrees; exiting a worktree can otherwise delete unmerged or unpushed commits.
 
-**Stop hook git reachability can be stale or fail open**: Stop hooks that
-compute unpushed work from an upstream range such as `$upstream..HEAD` can
-misread both stale remote-tracking refs and a missing `origin/HEAD`. Before
-amending, force-pushing, or treating a silent Stop hook pass as proof that all
-commits are pushed, check whether `HEAD` contains commits unreachable from every
-remote ref. Refresh remote-tracking refs first so a deleted remote branch does
-not make old commits look published:
+**Stop hook and worktree git reachability can be stale or fail open**: Hooks
+that compute unpushed work from local refs, including upstream ranges such as
+`$upstream..HEAD`, can misread both stale remote-tracking refs and a missing
+`origin/HEAD`. `worktree-guard` has the same local-ref boundary for its
+unpushed check because `ExitWorktree` hooks should not depend on a network fetch
+during cleanup. Before amending, force-pushing, exiting a worktree, or treating
+a silent hook pass as proof that all commits are pushed, check whether `HEAD`
+contains commits unreachable from every remote ref. Refresh remote-tracking refs
+first so a deleted remote branch does not make old commits look published:
 
 ```sh
 git fetch --prune --quiet
