@@ -167,9 +167,10 @@ were not committed before hooks were installed, or that a remote push has been
 approved.
 
 If a Stop hook is your proof that commits were pushed, add the output of this
-separate git reachability check:
+separate git reachability check after refreshing remote-tracking refs:
 
 ```sh
+git fetch --prune --quiet
 git rev-list HEAD --not --remotes --count
 ```
 

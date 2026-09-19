@@ -56,11 +56,13 @@ same checkout before amending, force-pushing, deleting branches, or reporting a
 session as safely published:
 
 ```sh
+git fetch --prune --quiet
 git rev-list HEAD --not --remotes --count
 ```
 
 The expected value is `0`; a non-zero value means at least one local commit is
-not reachable from any remote ref.
+not reachable from any remote ref. The fetch step removes stale
+remote-tracking refs before the count.
 
 If this is a git checkout, move to the repo root first; otherwise stay in the
 directory you use for Claude Code:

@@ -88,8 +88,9 @@ next intended action is `commit`, `push`, or `public report`, inspect the staged
 diff, destination branch, and remote target separately before approval. Hook
 verification proves only the checked hook boundary, not that the pending
 publication is safe. If a Stop hook is being used as proof that commits were
-pushed, record `git rev-list HEAD --not --remotes --count` separately and expect
-`0` before amending, force-pushing, or deleting a branch.
+pushed, run `git fetch --prune --quiet`, record
+`git rev-list HEAD --not --remotes --count` separately, and expect `0` before
+amending, force-pushing, or deleting a branch.
 
 Use the [triage guide](TRIAGE.md) when the summary has multiple findings and
 you need a repair order.
