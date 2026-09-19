@@ -231,6 +231,9 @@ If those are clean, document the remaining platform warnings as residual risk. F
 | `@enforced` rules | 5 | Marks `CLAUDE.md` rules for deterministic enforcement |
 | read-once PostCompact reset | 2 | Conditional check when read-once is installed |
 
+The base denominator is 120. If read-once is installed, the checker adds the
+2-point PostCompact cache-reset check, so that setup is scored out of 122.
+
 ## Grades
 
 | Percent | Grade | Meaning |
