@@ -870,6 +870,21 @@ Bash separately with out-of-scope canaries before committing automation output.
 
 **Internal git operations bypass all hooks**: Claude Code runs background git operations (fetch + reset) [programmatically every ~10 minutes](https://github.com/anthropics/claude-code/issues/40710) without spawning an external `git` binary or making a tool call. Since hooks only fire on tool calls, git-safe and all other hooks are blind to these operations. This can silently destroy uncommitted changes to tracked files. Workaround: use git worktrees (immune to resets in the main checkout) or commit frequently. If you use `claude -w`, also install [worktree-guard](tools/worktree-guard/) before relying on worktrees; exiting a worktree can otherwise delete unmerged or unpushed commits.
 
+**Stop hook git reachability can be stale or fail open**: Stop hooks that
+compute unpushed work from an upstream range such as `$upstream..HEAD` can
+misread both stale remote-tracking refs and a missing `origin/HEAD`. Before
+amending, force-pushing, or treating a silent Stop hook pass as proof that all
+commits are pushed, check whether `HEAD` contains commits unreachable from every
+remote ref:
+
+```sh
+git rev-list HEAD --not --remotes --count
+```
+
+A non-zero count means reachable local commits are not on any remote ref. See
+the [known limitation entry](https://framework.boucle.sh/limitations.html#remote-stop-git-hook-can-target-published-commits)
+for the stale-upstream and missing-`origin/HEAD` cases.
+
 **Permissions desync after editing settings.local.json**: If Claude's Edit tool modifies `.claude/settings.local.json` during a session, the in-memory permission state [desyncs from the file on disk](https://github.com/anthropics/claude-code/issues/41259). Allow rules stop working and the user is repeatedly prompted for commands that are already permitted. The file on disk is correct; the problem is the in-memory cache. Workaround: let Claude Code manage permission files through its own prompt mechanism, or restart the session after manual edits.
 
 **New in v2.1.89: PermissionDenied hook event**: A new hook event fires after auto mode classifier denials. Hooks can return `{"retry": true}` to tell the model it can retry the denied operation. The linked issue documents the original documentation gap for this event. Also in v2.1.89: hooks `if` conditions now [match compound Bash commands](https://github.com/anthropics/claude-code/issues/41262) (`ls && git push` matches `Bash(git *)`) and commands with env-var prefixes (`FOO=bar git push`).
