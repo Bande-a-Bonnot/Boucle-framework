@@ -93,6 +93,7 @@ checks.
 | `Background agents spawned via the Agent tool` | Avoid unsupervised background agents in bypass mode, or monitor token and process usage outside Claude Code. |
 | `Project-scoped plugins detected` | Audit `~/.claude/plugins.json` and remove project plugins that should not run outside their declared project. |
 | `MCP tools in your permission allow list` | If an MCP call is rejected without a prompt, test whether a parameter value triggered stricter matching before widening allow rules. |
+| `Stop hooks are configured` | If a Stop hook proves that work was pushed, also run `git rev-list HEAD --not --remotes --count` before amending, force-pushing, or treating a silent Stop hook pass as proof that every commit is reachable from a remote ref. |
 
 ## Fast repair commands
 
@@ -172,6 +173,8 @@ At that point, keep the verified boundary clear:
 - Healthy hook files.
 - Zero `FAIL-OPEN` payload checks.
 - No skipped `PreToolUse` checks for hooks that enforce your boundary.
+- If a Stop hook is your "all commits are pushed" proof, zero unreachable
+  commits from `git rev-list HEAD --not --remotes --count`.
 
 If the grade is still C after this, do not chase the letter grade by
 reinstalling. The remaining issues are usually Claude Code platform limits or

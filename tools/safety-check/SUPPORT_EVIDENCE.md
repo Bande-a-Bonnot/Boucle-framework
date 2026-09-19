@@ -166,6 +166,16 @@ is not evidence that the current staged content is safe to publish, that secrets
 were not committed before hooks were installed, or that a remote push has been
 approved.
 
+If a Stop hook is your proof that commits were pushed, add the output of this
+separate git reachability check:
+
+```sh
+git rev-list HEAD --not --remotes --count
+```
+
+Use `0` as the expected value before amending, force-pushing, deleting a branch,
+or reporting that every local commit is reachable from a remote ref.
+
 ## 4. Read the summary before posting
 
 Common summary lines have specific meanings:
