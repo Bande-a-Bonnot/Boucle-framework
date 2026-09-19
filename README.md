@@ -875,9 +875,11 @@ compute unpushed work from an upstream range such as `$upstream..HEAD` can
 misread both stale remote-tracking refs and a missing `origin/HEAD`. Before
 amending, force-pushing, or treating a silent Stop hook pass as proof that all
 commits are pushed, check whether `HEAD` contains commits unreachable from every
-remote ref:
+remote ref. Refresh remote-tracking refs first so a deleted remote branch does
+not make old commits look published:
 
 ```sh
+git fetch --prune --quiet
 git rev-list HEAD --not --remotes --count
 ```
 
