@@ -101,6 +101,8 @@ paths = {
         "check --verify --summary-only",
         "check --verify --strict",
         "installer-managed strict safety audit",
+        "This support-summary command is report-only",
+        "when shell exit status is part of a go/no-go decision",
     ],
 }
 
