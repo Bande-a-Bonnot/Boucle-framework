@@ -4,6 +4,10 @@ Use `--verify --strict` when a failed or inconclusive hook check should fail the
 script. It is useful for developer workstation checks and for repositories that
 keep Claude Code hook settings in version control.
 
+Without `--strict`, verification findings are report-only. Use
+`--verify --summary-only --strict` when automation needs the bounded summary
+format and the same failing exit behavior.
+
 Strict mode exits `1` when safety-check finds any of these:
 
 - No hooks.

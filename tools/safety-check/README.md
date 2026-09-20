@@ -99,6 +99,11 @@ cd "$repo_root"
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash -s -- --verify --summary-only
 ```
 
+`--summary-only` changes the output shape, not the gate. Without `--strict`,
+verification findings are report-only and the command is intended for support
+handoffs. For compact scripted gating, combine the flags:
+`--verify --summary-only --strict`.
+
 For CI or scripted checks, add `--strict`:
 
 ```sh
