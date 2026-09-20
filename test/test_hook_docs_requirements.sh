@@ -191,6 +191,17 @@ docs = {
         "so that setup is scored out of 122",
         "github.com/anthropics/claude-code/issues/91226",
     ],
+    repo / "tools" / "safety-check" / "QUICKSTART.md": [
+        "This support-summary command is report-only",
+        "Use `--verify --summary-only --strict` only when the shell exit",
+        "That command is for support evidence, not go/no-go gating",
+        "--verify --summary-only --strict",
+    ],
+    repo / "tools" / "safety-check" / "FIRST_TEST.md": [
+        "The `--summary-only` form is intentionally report-only unless you also add",
+        "Use `--verify --summary-only --strict` when this command is part of",
+        "go/no-go check",
+    ],
     repo / "tools" / "safety-check" / "TRIAGE.md": [
         "## Full-report warning map",
         "repo_root=\"$(git rev-parse --show-toplevel 2>/dev/null || pwd)\"",
