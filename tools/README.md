@@ -188,7 +188,7 @@ install.sh upgrade               # Re-download all installed hooks to latest ver
 install.sh uninstall <hook>      # Remove a specific hook (files + settings.json entry)
 install.sh uninstall all         # Remove all hooks
 install.sh check                 # Run safety audit on your Claude Code setup
-install.sh check --verify --summary-only # Print public support summary only
+install.sh check --verify --summary-only # Print public support summary only, not a go/no-go gate
 install.sh check --verify --strict # Run strict safety audit with payload checks
 install.sh doctor                # Diagnose files, settings, permissions
 install.sh backup                # Snapshot settings.json before Claude Code updates
@@ -200,7 +200,10 @@ install.sh restore               # Restore the most recent backup only if you me
 Run `verify`, `check`, and `doctor` from the same project root where you start
 Claude Code. The installer-managed hooks live in user settings, but safety-check
 and root-sensitive hook tests need the same working directory as the Claude Code
-session so project `.claude/settings.json` entries are visible.
+session so project `.claude/settings.json` entries are visible. Use
+`check --verify --summary-only` for bounded support evidence, and use
+`check --verify --summary-only --strict` or `check --verify --strict` when the
+shell exit status is part of a go/no-go decision.
 
 On Windows, use the same commands through `install.ps1`, including
 `install.ps1 verify` to re-run the native PowerShell hook payload checks after

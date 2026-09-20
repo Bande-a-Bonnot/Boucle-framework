@@ -85,7 +85,10 @@ paths = {
     ],
     repo / "tools" / "README.md": [
         "install.sh check --verify --summary-only",
+        "Print public support summary only, not a go/no-go gate",
         "install.sh check --verify --strict",
+        "check --verify --summary-only --strict",
+        "shell exit status is part of a go/no-go decision",
         "Run strict safety audit with payload checks",
         "Test installed hooks with representative payloads",
     ],
