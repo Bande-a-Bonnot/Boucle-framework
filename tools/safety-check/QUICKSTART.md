@@ -73,6 +73,12 @@ cd "$repo_root"
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash -s -- --verify --summary-only
 ```
 
+This support-summary command is report-only. It keeps verification findings
+non-fatal so you can share the bounded block without turning the first audit
+into a gate. Use `--verify --summary-only --strict` only when the shell exit
+status should fail on missing hooks, skipped boundary hooks, or `FAIL-OPEN`
+payload checks.
+
 Command boundary: this downloads `tools/safety-check/check.sh` from GitHub raw
 content and runs it locally on your current project and Claude Code settings.
 The checker does not upload your `settings.json`, hook files, shell history,
@@ -451,6 +457,16 @@ support block:
 repo_root="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
 cd "$repo_root"
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash -s -- --verify --summary-only
+```
+
+That command is for support evidence, not go/no-go gating. Pair the same
+summary shape with `--strict` when a script or terminal session should stop on
+missing hooks, skipped boundary hooks, or `FAIL-OPEN` payload checks:
+
+```sh
+repo_root="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+cd "$repo_root"
+curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash -s -- --verify --summary-only --strict
 ```
 
 Add the short context fields from the safe support evidence guide above the

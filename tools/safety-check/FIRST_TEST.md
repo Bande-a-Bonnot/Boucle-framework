@@ -141,6 +141,11 @@ tokens, private URLs, or proprietary `CLAUDE.md` rules. See
 [safe support evidence](SUPPORT_EVIDENCE.md) for the full public-report
 boundary.
 
+The `--summary-only` form is intentionally report-only unless you also add
+`--strict`. Use `--verify --summary-only --strict` when this command is part of
+a go/no-go check and should exit non-zero for missing hooks, skipped boundary
+hooks, or `FAIL-OPEN` payload checks.
+
 If the summary says `Verify: not run`, `no hooks found`, or
 `0 payload checks`, install the recommended hooks and verify again:
 
