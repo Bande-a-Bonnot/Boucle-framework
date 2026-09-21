@@ -122,6 +122,10 @@ inventory unless no `PreToolUse` payload checks ran.
 See [scripted checks](CI.md) for GitHub Actions, workstation scripts, exit
 codes, and the limits of what repository CI can prove.
 
+If you need a compact, self-reported README label after verification, use the
+[badge guide](BADGE.md). The badge is not a certification and must be removed
+when you cannot reproduce the same tier locally.
+
 Read the result as a repair list, not as a badge. Fix these before trusting the session:
 
 1. Bypass flags such as `IS_DEMO=1` or a non-empty `CLAUDE_CODE_SIMPLE`.
