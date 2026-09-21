@@ -23,6 +23,7 @@ Use the first row that matches why you are here:
 | You want to audit your current Claude Code setup | [Run the audit](#1-run-the-audit) | You understand the first missing hook, settings, or environment issue. |
 | You want a minimal personal workstation baseline | [Install the baseline hooks](#2-install-the-baseline-hooks) | `install.sh verify` or `install.ps1 verify` reports the recommended hooks blocking their test payloads. |
 | You need proof before a risky session, CI job, or team handoff | [Verify the hooks fire](#3-verify-the-hooks-fire) | The summary reports zero `FAIL-OPEN` checks, zero skipped boundary hooks, and a fresh Claude Code session has started from the same root. |
+| You want a short README status label after verification | [Generate a self-reported badge](#optional-generate-a-self-reported-badge) | You can reproduce the same `--verify --badge` tier locally from the documented project root. |
 | Claude Code just updated or started behaving differently | [Claude Code update checklist](UPDATE_CHECKLIST.md) | You captured a fresh strict result from the same root before trusting the updated session. |
 | You are preparing a public support request | [Share safe support evidence](#7-share-safe-support-evidence) | You have only the bounded summary block and the minimum redacted context. |
 
@@ -294,6 +295,24 @@ contains that `.claude/settings.json` before trusting the result.
 The `N/8 hooks` inventory counts the 7 standalone hooks plus `enforce-hooks`;
 `install.sh all` installs the standalone suite, and `enforce-hooks` is installed
 separately when you want CLAUDE.md rules enforced at tool-call time.
+
+### Optional: generate a self-reported badge
+
+Use this only after verification gives the same result from the project root
+you want to document. The badge is a compact status label for that setup, not a
+certification:
+
+```sh
+repo_root="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+cd "$repo_root"
+curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash -s -- --verify --badge
+```
+
+Copy only the `Markdown:` line into your README. Keep the summary or JSON
+output locally as evidence. Remove the badge when you cannot reproduce the same
+tier after a Claude Code update, hook edit, settings edit, shell change, or
+project-root change. See the [badge guide](BADGE.md) for the tier meanings and
+sharing boundary.
 
 Use the first matching row from the summary as your next repair:
 
