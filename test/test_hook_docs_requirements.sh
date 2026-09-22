@@ -289,6 +289,7 @@ docs = {
         "MCP servers involved: none / names from claude mcp list / not sure",
         "Do not paste <code>claude mcp get</code> output",
         "remote MCP server kept the same tool surface or instructions",
+        "If claude --version hangs: Claude Code version: version probe hangs",
     ],
     repo / "tools" / "safety-check" / "SUPPORT_EXAMPLES.md": [
         "downloads `tools/safety-check/check.sh` from GitHub raw content",
