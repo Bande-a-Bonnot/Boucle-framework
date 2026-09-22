@@ -739,20 +739,28 @@ if unsafe_recipe_blocks:
         f"isolation prelude near line(s): {unsafe_recipe_blocks}"
     )
 
-after_update = recipes_text.split('<div class="recipe" id="after-update">', 1)[1]
-after_update = after_update.split('<div class="recipe"', 1)[0]
-stale_after_update = [
-    marker for marker in (
-        '<span class="prompt-char">$</span> claude --version',
-        '<span class="prompt-char">PS&gt;</span> claude --version',
-    )
-    if marker in after_update
-]
-if stale_after_update:
-    raise SystemExit(
-        "docs/recipes.html after-update recipe must use the bounded safety-check "
-        f"version probe, not direct version commands: {stale_after_update}"
-    )
+version_probe_recipe_ids = (
+    "after-update",
+    "resumed-session",
+    "mcp-plugin-update",
+)
+for recipe_id in version_probe_recipe_ids:
+    marker = f'<div class="recipe" id="{recipe_id}">'
+    recipe = recipes_text.split(marker, 1)[1]
+    recipe = recipe.split('<div class="recipe"', 1)[0]
+    stale_direct_version_probes = [
+        direct_marker for direct_marker in (
+            '<span class="prompt-char">$</span> claude --version',
+            '<span class="prompt-char">PS&gt;</span> claude --version',
+        )
+        if direct_marker in recipe
+    ]
+    if stale_direct_version_probes:
+        raise SystemExit(
+            f"docs/recipes.html {recipe_id} recipe must use the bounded "
+            "safety-check version probe, not direct version commands: "
+            f"{stale_direct_version_probes}"
+        )
 
 hook_files = sorted((repo / "tools").glob("*/hook.sh"))
 jq_hooks = [path for path in hook_files if "jq" in path.read_text()]
