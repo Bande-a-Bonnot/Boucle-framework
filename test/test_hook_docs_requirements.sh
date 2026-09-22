@@ -317,6 +317,8 @@ docs = {
         "both the old Claude Code version and the bounded safety summary",
         "If only one was captured, say `not captured`",
         "Passed hooks with residual warnings",
+        "Claude Code version: output of claude --version, if it returns quickly",
+        "If `claude --version` hangs, write `Claude Code version: version probe hangs`.",
         "Do not reinstall repeatedly just to improve",
         "Verify: 0 FAIL-OPEN | 8 payload checks | 0 skipped",
         "Boundary: PreToolUse hooks passed representative checks; document residual platform warnings.",
