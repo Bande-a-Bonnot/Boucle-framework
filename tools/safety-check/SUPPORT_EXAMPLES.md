@@ -24,7 +24,7 @@ Then post a report shaped like this:
 ```text
 OS: macOS
 Shell: zsh
-Claude Code version: 1.0.93
+Claude Code version: output of claude --version
 Where hooks are installed: user settings
 Command/scope: real project-root --verify --summary-only
 What changed recently: Claude Code update, then install.sh upgrade
@@ -63,7 +63,7 @@ residual risk.
 ```text
 OS: macOS
 Shell: zsh
-Claude Code version: 1.0.93
+Claude Code version: output of claude --version
 Where hooks are installed: user settings
 Command/scope: real project-root --verify --summary-only
 What changed recently: fresh recommended install
@@ -130,7 +130,7 @@ Do not paste raw hook stderr from the Claude Code session.
 ```text
 OS: Linux
 Shell: bash
-Claude Code version: 1.0.93
+Claude Code version: output of claude --version
 Where hooks are installed: project settings
 Command/scope: real project-root --verify
 What changed recently: moved the repository to a new checkout path
@@ -163,7 +163,7 @@ only the final count line plus `WARN` or `SKIP` lines:
 ```text
 OS: native Windows
 Shell: PowerShell 7
-Claude Code version: 1.0.93
+Claude Code version: output of claude --version
 Where hooks are installed: user settings
 Command/scope: native install.ps1 verify
 What changed recently: fresh recommended install
@@ -184,7 +184,7 @@ Do not paste the startup hook table if it includes local paths.
 ```text
 OS: native Windows
 Shell: PowerShell 7
-Claude Code version: 1.0.93
+Claude Code version: output of claude --version
 Where hooks are installed: none detected
 Command/scope: native install.ps1 verify
 What changed recently: checking before first install
