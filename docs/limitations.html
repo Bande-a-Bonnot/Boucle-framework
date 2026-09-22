@@ -221,7 +221,7 @@
 <body>
     <div class="container">
         <h1><a href="/">boucle</a> / known limitations</h1>
-        <p class="subtitle"><span id="total-count">1920</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-09-08.</span></p>
+        <p class="subtitle"><span id="total-count">1921</span> documented limitations of Claude Code's hook system. Collected from <a href="https://github.com/anthropics/claude-code/issues">GitHub issues</a> and testing. <a href="https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/docs/limitations.json">Source data</a>. <a href="limitations.json" title="Machine-readable JSON with id, title, category, severity, status, fixed_in, issues, description">JSON</a>. <a href="limitations-feed.xml" title="Atom feed — subscribe to get notified of new entries">Feed</a>. <span style="color:var(--text-muted);font-size:0.8rem;">Last updated: 2026-09-22.</span></p>
 
         <div class="stats-bar" id="stats-bar"></div>
 
@@ -21784,6 +21784,18 @@
                         <!-- workaround:mcp-empty-resources-capability-can-be-treated-as-unsupported -->
             <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> Do not treat raw MCP wire-level `resources/list` success as proof that Claude Code can read those resources. After adding or updating an MCP server, test `ListMcpResourcesTool` and `ReadMcpResourceTool` from a Claude Code session, not only curl or SDK probes. If an affected server advertises `resources: {}` and Claude Code reports no support, try adding explicit optional capability fields such as `listChanged: false`, bridging through a transport/server implementation known to expose resources in Claude Code, or falling back to MCP tools that return the required data until the client accepts empty capability objects.</p>
             <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/92729" target="_blank">#92729</a></div>
+        </div>
+        <div class="kl-entry" data-category="Permission system" data-issues="96026" id="executed-permission-decisions-do-not-report-matched-rules" data-severity="medium" data-status="open">
+            <div class="kl-header">
+                <span class="kl-num">#1921</span>
+                <span class="kl-cat">Permission system</span>
+                <span class="kl-sev" style="font-size:0.7rem;background:#d97706;color:white;padding:0.1rem 0.4rem;border-radius:12px;margin-left:0.3rem;font-weight:600;text-transform:uppercase;">medium</span>
+            </div>
+            <h3>Executed permission decisions do not report the matched rule.</h3>
+            <p>A reported Agent SDK 0.3.261 and bundled Claude Code 2.1.261 setup delegated its permission document to the CLI and found that executed allow and deny outcomes did not identify which permission statement matched. The SDK&#x27;s `canUseTool` callback exposes `matchedAskRule` only when an ask rule forces a prompt, while executed allows have no allow-side `permission_allowed` frame, `matchedRule` field, or rule source. Hosts therefore cannot answer which rule permitted a tool call, whether a rule is dead, or whether the classifier or another fast path resolved the decision without reimplementing Claude Code&#x27;s permission matcher.</p>
+                        <!-- workaround:executed-permission-decisions-do-not-report-matched-rules -->
+            <p style="margin-top:0.5rem;padding:0.5rem 0.75rem;background:#1a2a1a;border-left:3px solid #22c55e;border-radius:4px;font-size:0.85rem;"><strong style="color:#22c55e;">Workaround:</strong> For SDK hosts and unattended automation that need auditability, log the exact permission document version you push into Claude Code and add harmless canaries for critical allow, ask, and deny rules after every settings change. Preserve CLI debug stderr when diagnosing failures because it may reveal the decider class, but do not treat host-side re-matching of rules as authoritative. Keep operator UI clear that rule usage counts are unavailable until the CLI reports matched rule identity for executed decisions.</p>
+            <div class="kl-issues">Issues: <a href="https://github.com/anthropics/claude-code/issues/96026" target="_blank">#96026</a></div>
         </div>
         <!-- END GENERATED LIMITATIONS -->
 <footer>
