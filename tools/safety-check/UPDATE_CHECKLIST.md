@@ -81,12 +81,13 @@ if ($root) { Set-Location $root }
 
 ## Before updating
 
-Capture the current version and bounded summary before changing anything from
-that same root. Those two lines make post-update regressions easier to compare
-or report:
+Capture the current bounded summary before changing anything from that same
+root. The safety-check command runs a bounded Claude Code version probe, so a
+stuck `claude --version` cannot hang the baseline capture. If you also run
+`claude --version` manually and it does not return quickly, stop the probe and
+record `Claude Code version: version probe hangs`:
 
 ```sh
-claude --version 2>/dev/null || printf 'claude CLI not found on PATH\n'
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash -s -- --verify --summary-only
 ```
 
@@ -95,12 +96,14 @@ content and runs it locally on your current project and Claude Code settings.
 The checker does not upload your `settings.json`, hook files, shell history,
 repository contents, session logs, or safety summary output.
 
-On native Windows, record the Claude Code version and the native verifier count:
+On native Windows, record the bounded safety summary and the native verifier
+count. If a manual `claude --version` probe hangs, write
+`Claude Code version: version probe hangs` in the handoff notes:
 
 ```powershell
 $root = if (Get-Command git -ErrorAction SilentlyContinue) { git rev-parse --show-toplevel 2>$null }
 if ($root) { Set-Location $root }
-claude --version 2>$null
+iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } check --verify --summary-only"
 iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } verify"
 ```
 
