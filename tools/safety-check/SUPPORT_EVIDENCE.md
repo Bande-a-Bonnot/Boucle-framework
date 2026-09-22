@@ -255,7 +255,7 @@ should not be posted.
 ```text
 OS:
 Shell:
-Claude Code version:
+Claude Code version: output of claude --version, if it returns quickly
 Where hooks are installed:
 Command/scope:
 What changed recently:
