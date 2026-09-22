@@ -292,6 +292,8 @@ docs = {
         "Do not paste <code>claude mcp get</code> output",
         "remote MCP server kept the same tool surface or instructions",
         "If claude --version hangs: Claude Code version: version probe hangs",
+        "The checker includes a bounded Claude Code version probe",
+        "install.ps1) } check --verify --summary-only",
     ],
     repo / "tools" / "safety-check" / "SUPPORT_EXAMPLES.md": [
         "downloads `tools/safety-check/check.sh` from GitHub raw content",
@@ -735,6 +737,21 @@ if unsafe_recipe_blocks:
     raise SystemExit(
         "docs/recipes.html safety-check snippets need a project-root or "
         f"isolation prelude near line(s): {unsafe_recipe_blocks}"
+    )
+
+after_update = recipes_text.split('<div class="recipe" id="after-update">', 1)[1]
+after_update = after_update.split('<div class="recipe"', 1)[0]
+stale_after_update = [
+    marker for marker in (
+        '<span class="prompt-char">$</span> claude --version',
+        '<span class="prompt-char">PS&gt;</span> claude --version',
+    )
+    if marker in after_update
+]
+if stale_after_update:
+    raise SystemExit(
+        "docs/recipes.html after-update recipe must use the bounded safety-check "
+        f"version probe, not direct version commands: {stale_after_update}"
     )
 
 hook_files = sorted((repo / "tools").glob("*/hook.sh"))
