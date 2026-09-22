@@ -812,7 +812,10 @@ current-release tracker:
 | v2.1.81-84 | [Permission bypass resets mid-session](https://github.com/anthropics/claude-code/issues/37745) when PreToolUse hooks are installed |
 | < v2.1.50 | No `hookSpecificOutput` format support (deprecated `decision: "block"` still works but should be migrated) |
 
-Run `claude --version` to check your local install.
+`safety-check` runs a bounded `claude --version` probe before applying
+version-specific warnings. If you also run `claude --version` manually and it
+does not return quickly, stop the probe and record
+`Claude Code version: version probe hangs` instead of waiting on the terminal.
 
 ## Troubleshooting
 
