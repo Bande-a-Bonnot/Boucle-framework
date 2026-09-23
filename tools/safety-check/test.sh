@@ -177,6 +177,7 @@ assert "help shows verify flag" "--verify" "$HELP_OUTPUT"
 assert "help explains non-PreToolUse skip boundary" "other hook events are skipped" "$HELP_OUTPUT"
 assert "help shows summary-only flag" "--summary-only" "$HELP_OUTPUT"
 assert "help shows strict flag" "--strict" "$HELP_OUTPUT"
+assert "help shows badge flag" "--badge" "$HELP_OUTPUT"
 assert_not "help does not run audit" "Safety Score:" "$HELP_OUTPUT"
 
 # === Test 9c: Unknown flags fail closed instead of silently skipping verify ===
@@ -211,7 +212,49 @@ assert "strict without verify explains requirement" "Option --strict requires --
 assert "strict without verify shows usage" "Usage: check.sh" "$STRICT_NO_VERIFY_OUTPUT"
 assert_not "strict without verify does not run audit" "Safety Score:" "$STRICT_NO_VERIFY_OUTPUT"
 
-# === Test 9e: Summary-only prints only the bounded support block ===
+# === Test 9e: Badge mode requires verification ===
+set +e
+BADGE_NO_VERIFY_OUTPUT=$(bash "$CHECK_SCRIPT" --badge 2>&1)
+BADGE_NO_VERIFY_EXIT=$?
+set -e
+TOTAL=$((TOTAL + 1))
+if [ "$BADGE_NO_VERIFY_EXIT" -eq 2 ]; then
+    PASS=$((PASS + 1))
+else
+    FAIL=$((FAIL + 1))
+    echo "FAIL: badge without verify should exit 2, got $BADGE_NO_VERIFY_EXIT"
+fi
+assert "badge without verify explains requirement" "Option --badge requires --verify" "$BADGE_NO_VERIFY_OUTPUT"
+assert "badge without verify shows usage" "Usage: check.sh" "$BADGE_NO_VERIFY_OUTPUT"
+assert_not "badge without verify does not run audit" "Safety Score:" "$BADGE_NO_VERIFY_OUTPUT"
+
+# === Test 9f: Badge mode does not combine with summary-only ===
+set +e
+BADGE_SUMMARY_ONLY_OUTPUT=$(bash "$CHECK_SCRIPT" --verify --summary-only --badge 2>&1)
+BADGE_SUMMARY_ONLY_EXIT=$?
+set -e
+TOTAL=$((TOTAL + 1))
+if [ "$BADGE_SUMMARY_ONLY_EXIT" -eq 2 ]; then
+    PASS=$((PASS + 1))
+else
+    FAIL=$((FAIL + 1))
+    echo "FAIL: badge with summary-only should exit 2, got $BADGE_SUMMARY_ONLY_EXIT"
+fi
+assert "badge summary-only explains conflict" "Option --badge cannot be combined with --summary-only" "$BADGE_SUMMARY_ONLY_OUTPUT"
+assert "badge summary-only shows usage" "Usage: check.sh" "$BADGE_SUMMARY_ONLY_OUTPUT"
+assert_not "badge summary-only does not run audit" "Safety Score:" "$BADGE_SUMMARY_ONLY_OUTPUT"
+
+# === Test 9g: Badge mode emits documented markdown tier ===
+TMPDIR_BADGE=$(mktemp -d)
+mkdir -p "$TMPDIR_BADGE/.claude"
+echo '{"hooks": {}}' > "$TMPDIR_BADGE/.claude/settings.json"
+BADGE_OUTPUT=$(HOME="$TMPDIR_BADGE" bash "$CHECK_SCRIPT" --verify --badge 2>&1) || true
+assert "badge mode reports inconclusive tier" "Badge: claude-code-safety: inconclusive" "$BADGE_OUTPUT"
+assert "badge mode prints markdown line" "Markdown: \\[!\\[claude-code-safety: inconclusive\\]" "$BADGE_OUTPUT"
+assert "badge mode links badge guide" "tools/safety-check/BADGE.md" "$BADGE_OUTPUT"
+rm -rf "$TMPDIR_BADGE"
+
+# === Test 9h: Summary-only prints only the bounded support block ===
 TMPDIR_SUMMARY_ONLY=$(mktemp -d)
 mkdir -p "$TMPDIR_SUMMARY_ONLY/.claude"
 echo '{"hooks": {}}' > "$TMPDIR_SUMMARY_ONLY/.claude/settings.json"
@@ -225,7 +268,7 @@ assert_not "summary-only omits footer outside summary" "tree/main/tools" "$SUMMA
 rm -rf "$TMPDIR_SUMMARY_ONLY"
 
 stage "version timeout guard"
-# === Test 9f: Hanging claude --version cannot hang the audit ===
+# === Test 9i: Hanging claude --version cannot hang the audit ===
 TMPDIR_HANGING_CLAUDE=$(mktemp -d)
 TMPDIR_HANGING_AUDIT=$(mktemp -d)
 cat > "$TMPDIR_HANGING_CLAUDE/claude" << 'HANGINGCLAUDE'
