@@ -308,9 +308,9 @@ cd "$repo_root"
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash -s -- --verify --badge
 ```
 
-Copy only the `Markdown:` line into your README. Keep the summary or JSON
-output locally as evidence. Remove the badge when you cannot reproduce the same
-tier after a Claude Code update, hook edit, settings edit, shell change, or
+Copy only the `Markdown:` line into your README. Keep the support summary
+locally as evidence. Remove the badge when you cannot reproduce the same tier
+after a Claude Code update, hook edit, settings edit, shell change, or
 project-root change. See the [badge guide](BADGE.md) for the tier meanings and
 sharing boundary.
 

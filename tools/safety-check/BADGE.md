@@ -14,10 +14,9 @@ cd "$repo_root"
 curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/safety-check/check.sh | bash -s -- --verify --badge
 ```
 
-Copy only the `Markdown:` line. Keep the summary or JSON output locally as
-evidence, and do not share raw `settings.json`, hook command inventories, shell
-history, transcripts, screenshots, account access, repository access, or payment
-details.
+Copy only the `Markdown:` line. Keep the support summary locally as evidence,
+and do not share raw `settings.json`, hook command inventories, shell history,
+transcripts, screenshots, account access, repository access, or payment details.
 
 If you need a bounded local evidence block before copying the badge, run the
 summary form from the same root:
