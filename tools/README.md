@@ -190,6 +190,7 @@ install.sh uninstall all         # Remove all hooks
 install.sh check                 # Run safety audit on your Claude Code setup
 install.sh check --verify --summary-only # Print public support summary only, not a go/no-go gate
 install.sh check --verify --strict # Run strict safety audit with payload checks
+install.sh check --verify --badge # Print a self-reported README badge after verification
 install.sh doctor                # Diagnose files, settings, permissions
 install.sh backup                # Snapshot settings.json before Claude Code updates
 install.sh backup list           # Inspect backups and choose the filename to restore

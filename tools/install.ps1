@@ -11,6 +11,7 @@
 #   iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } check"
 #   iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } check --verify --summary-only"
 #   iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } check --verify --strict"
+#   iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } check --verify --badge"
 #   iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } doctor"
 #   iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } verify"
 #   iex "& { $(irm https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/main/tools/install.ps1) } upgrade"
@@ -316,7 +317,7 @@ if ($Hooks -and $Hooks.Count -gt 0 -and ($Hooks[0] -eq 'help' -or $Hooks[0] -eq 
     Write-Host "  backup                Snapshot settings.json (protects against auto-update wipes)"
     Write-Host "  backup list           Show available backups"
     Write-Host "  restore [file]        Restore a named backup; without file, use the most recent backup"
-    Write-Host "  check [--verify] [--summary-only] [--strict]"
+    Write-Host "  check [--verify] [--summary-only] [--strict] [--badge]"
     Write-Host "                        Run bash-based safety audit (requires Git Bash/WSL bash)"
     Write-Host "  doctor                Diagnose installation health (files, settings, permissions)"
     Write-Host "  help                  Show this help message"
@@ -346,6 +347,7 @@ if ($Hooks -and $Hooks.Count -gt 0 -and ($Hooks[0] -eq 'help' -or $Hooks[0] -eq 
     Write-Host "  install.ps1 check                  # Run bash-based safety audit"
     Write-Host "  install.ps1 check --verify --summary-only # Public support summary"
     Write-Host "  install.ps1 check --verify --strict # Strict safety audit"
+    Write-Host "  install.ps1 check --verify --badge # Self-reported README badge"
     Write-Host "  install.ps1 doctor                 # Check installation health"
     exit 0
 }

@@ -7,6 +7,7 @@
 # Or:    curl ... | bash -s -- verify
 # Or:    curl ... | bash -s -- check --verify --summary-only
 # Or:    curl ... | bash -s -- check --verify --strict
+# Or:    curl ... | bash -s -- check --verify --badge
 # Or:    curl ... | bash -s -- upgrade
 # Or:    curl ... | bash -s -- uninstall read-once
 # Or:    curl ... | bash -s -- uninstall all
@@ -104,7 +105,7 @@ if [ $# -gt 0 ] && { [ "$1" = "help" ] || [ "$1" = "--help" ] || [ "$1" = "-h" ]
   echo "  backup                Snapshot settings.json (protects against auto-update wipes)"
   echo "  backup list           Show available backups"
   echo "  restore [file]        Restore a named backup; without file, use the most recent backup"
-  echo "  check [--verify] [--summary-only] [--strict]"
+  echo "  check [--verify] [--summary-only] [--strict] [--badge]"
   echo "                        Run safety audit on your Claude Code setup"
   echo "  doctor                Diagnose installation health (files, settings, permissions)"
   echo "  help                  Show this help message"
@@ -134,6 +135,7 @@ if [ $# -gt 0 ] && { [ "$1" = "help" ] || [ "$1" = "--help" ] || [ "$1" = "-h" ]
   echo "  install.sh check                  # Run safety audit"
   echo "  install.sh check --verify --summary-only # Public support summary"
   echo "  install.sh check --verify --strict # Strict safety audit"
+  echo "  install.sh check --verify --badge # Self-reported README badge"
   echo "  install.sh doctor                 # Check installation health"
   exit 0
 fi
