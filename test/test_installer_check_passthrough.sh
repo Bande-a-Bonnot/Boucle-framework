@@ -48,6 +48,15 @@ case "$summary_output" in
         ;;
 esac
 
+badge_output=$(PATH="$tmpdir:/usr/bin:/bin" bash "$REPO_ROOT/tools/install.sh" check --verify --badge 2>&1)
+case "$badge_output" in
+    *"CHECK_ARGS:--verify --badge"*) ;;
+    *)
+        printf 'install.sh check did not pass --badge through.\nOutput:\n%s\n' "$badge_output" >&2
+        exit 1
+        ;;
+esac
+
 python3 - <<'PY' "$REPO_ROOT"
 import sys
 from pathlib import Path
@@ -56,18 +65,20 @@ repo = Path(sys.argv[1])
 text = (repo / "tools" / "install.ps1").read_text()
 paths = {
     repo / "tools" / "install.sh": [
-        "check [--verify] [--summary-only] [--strict]",
+        "check [--verify] [--summary-only] [--strict] [--badge]",
         "check --verify --summary-only",
         "check --verify --strict",
+        "check --verify --badge",
         "Test all installed hooks with representative payloads",
     ],
     repo / "tools" / "install.ps1": [
         "Native Windows hooks - no bash or jq required for install, verify, or doctor",
         "Safety-check audit - requires bash (Git Bash, WSL, or similar)",
-        "check [--verify] [--summary-only] [--strict]",
+        "check [--verify] [--summary-only] [--strict] [--badge]",
         "Run bash-based safety audit (requires Git Bash/WSL bash)",
         "check --verify --summary-only",
         "check --verify --strict",
+        "check --verify --badge",
         "Test installed hooks with representative payloads",
         "install.ps1 check                  # Run bash-based safety audit",
         "install.ps1 doctor                 # Check installation health",
@@ -79,6 +90,7 @@ paths = {
     repo / "README.md": [
         "check --verify --summary-only",
         "check --verify --strict",
+        "check --verify --badge",
         "Run `install.sh doctor` first",
         "Test all installed hooks with representative payloads",
         "Run strict safety audit with hook payload verification",
@@ -87,6 +99,7 @@ paths = {
         "install.sh check --verify --summary-only",
         "Print public support summary only, not a go/no-go gate",
         "install.sh check --verify --strict",
+        "install.sh check --verify --badge",
         "check --verify --summary-only --strict",
         "shell exit status is part of a go/no-go decision",
         "Run strict safety audit with payload checks",
