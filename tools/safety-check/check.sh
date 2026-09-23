@@ -17,12 +17,13 @@ print_usage() {
     cat << 'EOF'
 Claude Code Safety Check
 
-Usage: check.sh [--verify] [--summary-only] [--strict] [--help]
+Usage: check.sh [--verify] [--summary-only] [--strict] [--badge] [--help]
 
 Options:
   --verify        Send representative payloads to installed PreToolUse hooks and detect FAIL-OPEN results; other hook events are skipped.
   --summary-only  Print only the bounded copy/paste support summary.
   --strict        With --verify, exit 1 when hook verification fails or is inconclusive.
+  --badge         With --verify, print a self-reported README badge markdown line.
   --help          Show this help text.
 EOF
 }
@@ -31,6 +32,7 @@ EOF
 VERIFY_MODE=0
 STRICT_MODE=0
 SUMMARY_ONLY=0
+BADGE_MODE=0
 for arg in "$@"; do
     case "$arg" in
         --verify)
@@ -41,6 +43,9 @@ for arg in "$@"; do
             ;;
         --strict)
             STRICT_MODE=1
+            ;;
+        --badge)
+            BADGE_MODE=1
             ;;
         -h|--help)
             print_usage
@@ -56,6 +61,18 @@ done
 
 if [ "$STRICT_MODE" = "1" ] && [ "$VERIFY_MODE" != "1" ]; then
     printf "Option --strict requires --verify.\n\n" >&2
+    print_usage >&2
+    exit 2
+fi
+
+if [ "$BADGE_MODE" = "1" ] && [ "$VERIFY_MODE" != "1" ]; then
+    printf "Option --badge requires --verify.\n\n" >&2
+    print_usage >&2
+    exit 2
+fi
+
+if [ "$BADGE_MODE" = "1" ] && [ "$SUMMARY_ONLY" = "1" ]; then
+    printf "Option --badge cannot be combined with --summary-only.\n\n" >&2
     print_usage >&2
     exit 2
 fi
@@ -2560,6 +2577,34 @@ if [ "$VERIFY_RAN" = "1" ]; then
 fi
 printf "github.com/Bande-a-Bonnot/Boucle-framework\n"
 printf "%s\n" "--- End Safety Summary ---"
+
+if [ "$BADGE_MODE" = "1" ]; then
+    if [ "$VERIFY_FAIL" -gt 0 ]; then
+        BADGE_TIER="fail-open"
+        BADGE_VALUE="fail--open"
+        BADGE_COLOR="red"
+    elif [ "$VERIFY_NO_HOOKS" = "1" ] || [ "$VERIFY_TOTAL" -eq 0 ] || [ "$VERIFY_PRETOOLUSE_SKIP" -gt 0 ]; then
+        BADGE_TIER="inconclusive"
+        BADGE_VALUE="inconclusive"
+        BADGE_COLOR="lightgrey"
+    elif [ "$GRADE" = "A" ] || [ "$GRADE" = "B" ]; then
+        BADGE_TIER="verified"
+        BADGE_VALUE="verified"
+        BADGE_COLOR="brightgreen"
+    elif [ "$GRADE" = "C" ]; then
+        BADGE_TIER="partial"
+        BADGE_VALUE="partial"
+        BADGE_COLOR="yellow"
+    else
+        BADGE_TIER="inconclusive"
+        BADGE_VALUE="inconclusive"
+        BADGE_COLOR="lightgrey"
+    fi
+
+    echo ""
+    printf "Badge: claude-code-safety: %s\n" "$BADGE_TIER"
+    printf "Markdown: [![claude-code-safety: %s](https://img.shields.io/badge/claude--code--safety-%s-%s)](https://github.com/Bande-a-Bonnot/Boucle-framework/blob/main/tools/safety-check/BADGE.md)\n" "$BADGE_TIER" "$BADGE_VALUE" "$BADGE_COLOR"
+fi
 
 if [ "$SUMMARY_ONLY" != "1" ]; then
     echo ""
