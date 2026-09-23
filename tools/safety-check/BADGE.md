@@ -30,6 +30,11 @@ curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/mai
 
 ## Tiers
 
+Read the `Verify:` line together with the `Boundary:` line. A nonzero
+`skipped` count can still be verified when the boundary says only lifecycle or
+non-PreToolUse hooks were skipped; it is inconclusive when the boundary says a
+PreToolUse hook check was skipped or no hook payload checks ran.
+
 | Badge | Meaning |
 |-------|---------|
 | `claude-code-safety: verified` | Grade A or B, zero `FAIL-OPEN` checks, at least one payload check, and no skipped PreToolUse boundary. |
