@@ -65,10 +65,10 @@ log() {
   fi
 }
 
-# Print command segments split on unquoted shell separators. Quoted text and
-# here-doc bodies are replaced with spaces so commit messages, grep filters, and
-# JSON payloads that mention destructive git commands are not treated as
-# executable git operations.
+# Print command segments split on unquoted shell separators. Quoted arguments
+# become opaque Q tokens and here-doc bodies become spaces: their contents
+# cannot masquerade as Git commands, while a quoted -C directory still occupies
+# one argument when global options are normalized later.
 command_segments() {
   awk '
     function reset_heredoc(delim) {
@@ -303,7 +303,6 @@ while IFS= read -r raw; do
 done < <(printf '%s\n' "$COMMAND" | grep -oE "(^|[[:space:]])-C[[:space:]]+('[^']*'|\"[^\"]*\"|[^[:space:];&|]+)" || true)
 # Attached -C and alternate git-dir/work-tree forms are not resolved here.
 if printf '%s\n' "$COMMAND" | grep -qE '(^|[[:space:]])-C[^[:space:]]|(^|[[:space:]])--(git-dir|work-tree)(=|[[:space:]])'; then
-  # Attached -C and alternate git-dir/work-tree forms are not resolved here.
   UNRESOLVED_TARGET=1
 fi
 while IFS= read -r raw; do
