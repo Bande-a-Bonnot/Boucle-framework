@@ -663,12 +663,20 @@ assert_blocked "runtime shell command cannot hide hard reset" \
   "$(hook_input_at 'bash -c "$COMMAND"' "$TMPDIR/denied")"
 assert_blocked "runtime eval command cannot hide hard reset" \
   "$(hook_input_at 'eval "$COMMAND"' "$TMPDIR/denied")"
-assert_blocked "shell script execution cannot hide hard reset" \
-  "$(hook_input_at 'bash ./deploy.sh' "$TMPDIR/denied")"
-assert_blocked "direct script execution cannot hide hard reset" \
-  "$(hook_input_at './deploy.sh' "$TMPDIR/denied")"
+printf 'git status\n' > "$TMPDIR/denied/safe-script.sh"
+printf 'git reset --hard\n' > "$TMPDIR/denied/forbidden-script.sh"
+assert_allowed "shell script with safe Git remains allowed" \
+  "$(hook_input_at 'bash ./safe-script.sh' "$TMPDIR/denied")"
+assert_allowed "direct safe script remains allowed" \
+  "$(hook_input_at './safe-script.sh' "$TMPDIR/denied")"
+assert_allowed "sourced safe script remains allowed" \
+  "$(hook_input_at 'source ./safe-script.sh' "$TMPDIR/denied")"
+assert_blocked "shell script cannot hide hard reset" \
+  "$(hook_input_at 'bash ./forbidden-script.sh' "$TMPDIR/denied")"
+assert_blocked "direct script cannot hide hard reset" \
+  "$(hook_input_at './forbidden-script.sh' "$TMPDIR/denied")"
 assert_blocked "sourced script cannot hide hard reset" \
-  "$(hook_input_at 'source ./commands.sh' "$TMPDIR/denied")"
+  "$(hook_input_at 'source ./forbidden-script.sh' "$TMPDIR/denied")"
 
 # Runtime-selected Git operands and aliases are executable policy inputs, not
 # inert prose. These payloads are inspected by the hook; they are not executed.

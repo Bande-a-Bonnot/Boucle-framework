@@ -58,6 +58,9 @@ COMMAND=$(echo "$INPUT" | jq -r '.tool_input.command // empty')
 if [ -z "$COMMAND" ]; then
   exit 0
 fi
+
+PAYLOAD_CWD=$(echo "$INPUT" | jq -r '.cwd // empty')
+[ -n "$PAYLOAD_CWD" ] || PAYLOAD_CWD="$PWD"
 log() {
   if [ "${GIT_SAFE_LOG:-0}" = "1" ]; then
     echo "[git-safe] $*" >&2
@@ -454,29 +457,6 @@ is_opaque_word() {
   esac
 }
 
-is_uninspectable_script_segment() {
-  local segment="$1" words=() i=0 token
-  read -r -a words <<< "$segment"
-  [ ${#words[@]} -gt 0 ] || return 1
-  case "${words[0]}" in
-    source|.) return 0 ;;
-    *.sh|./*.sh|../*.sh) return 0 ;;
-    bash|sh|zsh|dash|ksh) ;;
-    *) return 1 ;;
-  esac
-  i=1
-  while [ $i -lt ${#words[@]} ]; do
-    token="${words[$i]}"
-    case "$token" in
-      -c) return 1 ;;
-      -*) i=$((i + 1)); continue ;;
-      *.sh|./*.sh|../*.sh) return 0 ;;
-      *) return 1 ;;
-    esac
-  done
-  return 1
-}
-
 is_git_command_segment() {
   local segment="$1"
   local words=()
@@ -738,6 +718,51 @@ mark_opaque_segments() {
   done <<< "$1"
 }
 
+append_literal_script_contents() {
+  local words=() token path script_path script_body i=0
+  read -r -a words <<< "$COMMAND"
+  while [ $i -lt ${#words[@]} ]; do
+    token="${words[$i]}"
+    path=""
+    case "$token" in
+      source|.)
+        path="${words[$((i + 1))]:-}"
+        i=$((i + 2)) ;;
+      bash|sh|zsh|dash|ksh)
+        i=$((i + 1))
+        while [ $i -lt ${#words[@]} ] && [[ "${words[$i]}" == -* ]]; do
+          [ "${words[$i]}" = "-c" ] && break
+          i=$((i + 1))
+        done
+        if [ $i -lt ${#words[@]} ] && [ "${words[$i]}" != "-c" ]; then
+          path="${words[$i]}"
+          i=$((i + 1))
+        fi ;;
+      *.sh|./*.sh|../*.sh)
+        path="$token"
+        i=$((i + 1)) ;;
+      *)
+        i=$((i + 1)) ;;
+    esac
+    [ -n "$path" ] || continue
+    case "$path" in *'$'*|*'`'*|*'__GIT_SAFE_'*) return 1 ;; esac
+    path="${path#\"}"; path="${path%\"}"
+    path="${path#\'}"; path="${path%\'}"
+    case "$path" in
+      *.sh) ;;
+      *) continue ;;
+    esac
+    if [[ "$path" = /* ]]; then
+      script_path="$path"
+    else
+      script_path="$PAYLOAD_CWD/$path"
+    fi
+    [ -f "$script_path" ] || return 1
+    script_body=$(<"$script_path") || return 1
+    COMMAND="${COMMAND}"$'\n'"${script_body}"
+  done
+}
+
 GIT_COMMANDS=""
 IMPLICIT_GIT=0
 EMBEDDED_SHELL=0
@@ -749,12 +774,15 @@ CURRENT_OPAQUE_EXEC=0
 GIT_CANDIDATE_INDEX=0
 OPAQUE_EXEC_LINES=""
 DYNAMIC_SHELL=0
-UNINSPECTABLE_SCRIPT=0
 SAFE_CD_CHAIN=0
 # Only this single, guarded cd form can omit the starting cwd from policy
 # checks. Other control flow may run Git in the starting directory.
 if [[ "$COMMAND" =~ ^[[:space:]]*cd[[:space:]]+[^\;\&\|]+[[:space:]]*\&\&[[:space:]]*git[[:space:]]+[^\;\&\|]*$ ]]; then
   SAFE_CD_CHAIN=1
+fi
+if ! append_literal_script_contents; then
+  printf '%s\n' 'git-safe: Script contents cannot be inspected safely.' >&2
+  exit 2
 fi
 if ! segments=$(command_segments); then
   printf '%s\n' 'git-safe: command inspection failed.' >&2
@@ -778,9 +806,6 @@ while IFS= read -r segment; do
     if is_opaque_word "$segment"; then
       DYNAMIC_SHELL=1
     fi
-  fi
-  if is_uninspectable_script_segment "$segment"; then
-    UNINSPECTABLE_SCRIPT=1
   fi
   if is_git_command_segment "$normalized"; then
     if [ "$CURRENT_OPAQUE_EXEC" = "1" ]; then
@@ -847,10 +872,6 @@ if [ -z "$GIT_COMMANDS" ]; then
     printf '%s\n' 'git-safe: Shell command is selected at runtime and cannot be inspected.' >&2
     exit 2
   fi
-  if [ "$UNINSPECTABLE_SCRIPT" != "0" ]; then
-    printf '%s\n' 'git-safe: Script contents cannot be inspected safely.' >&2
-    exit 2
-  fi
   log "SKIP: no executable git command"
   exit 0
 fi
@@ -859,9 +880,6 @@ fi
 # process cwd.  A session in repo A can run `git -C repo-B ...` or `cd repo-B &&
 # git ...`; A's allowlist must never authorize destructive work in B.  Multiple
 # targets must all allow the operation.  Unresolvable explicit targets deny it.
-PAYLOAD_CWD=$(echo "$INPUT" | jq -r '.cwd // empty')
-[ -n "$PAYLOAD_CWD" ] || PAYLOAD_CWD="$PWD"
-
 target_path() {
   local raw="$1"
   raw="${raw#\"}"; raw="${raw%\"}"
@@ -1093,8 +1111,6 @@ check_configured_aliases() {
 
 [ "$DYNAMIC_SHELL" = "0" ] ||
   block "Shell command is selected at runtime and cannot be inspected."
-[ "$UNINSPECTABLE_SCRIPT" = "0" ] ||
-  block "Script contents cannot be inspected safely."
 check_opaque_git_operands
 check_inline_alias_config
 check_configured_aliases

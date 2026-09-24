@@ -65,9 +65,10 @@ git-safe is a [PreToolUse hook](https://docs.anthropic.com/en/docs/claude-code/h
 Executable shell strings (`eval`, shell `-c`, `env -S`, and command substitutions) are
 checked too, including substitutions in unquoted here-doc bodies. Literal
 examples in single-quoted arguments and quoted here-doc bodies remain inert.
-Runtime-selected shell programs and shell-script execution (`bash script.sh`,
-`./script.sh`, and `source script.sh`) are denied because their contents cannot
-be inspected safely before execution.
+Literal shell scripts (`bash script.sh`, `./script.sh`, and `source script.sh`)
+are read and checked before execution; they are blocked only when their content
+contains a guarded Git operation. Runtime-selected shell programs remain denied
+because their content cannot be inspected safely before execution.
 Shell quotes around literal executable names, Git options, and Git environment
 assignments are removed for inspection. If an executable is selected by an
 expansion, destructive Git-shaped arguments are checked with an unresolved
