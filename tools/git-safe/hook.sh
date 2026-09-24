@@ -65,7 +65,7 @@ log() {
 }
 
 # Print command segments split on unquoted shell separators. Most quoted
-# arguments become opaque Q tokens; simple literal words, options, and Git
+# arguments become opaque markers; simple literal words, options, and Git
 # environment assignments remain visible after quote removal. Here-docs become
 # spaces, and substitutions in unquoted bodies still emit an execution marker.
 # A quoted -C directory still occupies one argument when options are normalized.
@@ -83,7 +83,7 @@ command_segments() {
       if (word ~ /^[-A-Za-z0-9_.\/=:+@]+$/) {
         return word
       }
-      return "Q"
+      return "__GIT_SAFE_OPAQUE_Q__"
     }
 
     function reset_heredoc(delim, quoted) {
@@ -296,7 +296,8 @@ command_segments() {
             quote_text = quote_text "\\" c
             out = out " "
           } else {
-            out = out c
+            # Backslash-escaped dollars and backticks are literal shell data.
+            out = out ((c == "$" || c == "`") ? "__GIT_SAFE_ESCAPED__" : c)
           }
           esc = 0
           continue
@@ -316,7 +317,7 @@ command_segments() {
             sq = 1
             quote_start = length(out)
             quote_text = ""
-            out = out "Q"
+            out = out "__GIT_SAFE_OPAQUE_Q__"
           }
           continue
         }
@@ -329,7 +330,7 @@ command_segments() {
             dq = 1
             quote_start = length(out)
             quote_text = ""
-            out = out "Q"
+            out = out "__GIT_SAFE_OPAQUE_Q__"
           }
           continue
         }
@@ -421,6 +422,36 @@ segment_sets_git_env() {
     esac
   done
   return 1
+}
+
+segment_sets_git_config() {
+  local words=() token i=0
+  read -r -a words <<< "$1"
+  [ ${#words[@]} -gt 0 ] || return 1
+  while [ $i -lt ${#words[@]} ]; do
+    case "${words[$i]}" in
+      builtin|command) i=$((i + 1)) ;;
+      *) break ;;
+    esac
+  done
+  [ $i -lt ${#words[@]} ] || return 1
+  case "${words[$i]}" in
+    export|declare|typeset|readonly|local) ;;
+    *) is_assignment_token "${words[$i]}" || return 1 ;;
+  esac
+  for token in "${words[@]}"; do
+    case "$token" in GIT_CONFIG_*=*) return 0 ;; esac
+  done
+  return 1
+}
+
+# Keep a marker when a shell word concatenates an expansion with verb or flag
+# fragments, so the complete runtime argv cannot be mistaken for a literal.
+is_opaque_word() {
+  case "$1" in
+    *__GIT_SAFE_OPAQUE_Q__*|*__GIT_SAFE_OPAQUE_U__*) return 0 ;;
+    *) return 1 ;;
+  esac
 }
 
 is_git_command_segment() {
@@ -559,7 +590,7 @@ is_git_command_segment() {
   done
 
   [ $i -lt ${#words[@]} ] || return 1
-  if [ "${words[$i]}" = "Q" ]; then
+  if is_opaque_word "${words[$i]}"; then
     # An expansion can select git at runtime. Match destructive Git arguments
     # under an unresolved target instead of treating the call as non-Git.
     OPAQUE_EXEC=1
@@ -652,6 +683,38 @@ strip_git_globals() {
   [ ${#output[@]} -gt 0 ] || return 0
   printf '%s ' "${output[@]}" | sed 's/ $//'
 }
+
+# The shell expands unquoted variables and substitutions before Git receives
+# argv. Keep assignment names for target/config checks, but mark any unknown
+# value as an opaque marker. Unlike quoted words, unquoted values may split.
+mark_opaque_expansions() {
+  local words=() output=() token
+  if [ -z "${1//[[:space:]]/}" ]; then
+    printf '\n'
+    return 0
+  fi
+  read -r -a words <<< "$1"
+  for token in "${words[@]}"; do
+    case "$token" in
+      *'$'*|*'`'*)
+        if is_assignment_token "$token"; then
+          output+=("${token%%=*}=__GIT_SAFE_OPAQUE_U__")
+        else
+          output+=("__GIT_SAFE_OPAQUE_U__")
+        fi ;;
+      *) output+=("$token") ;;
+    esac
+  done
+  printf '%s\n' "${output[*]}"
+}
+
+mark_opaque_segments() {
+  local segment
+  while IFS= read -r segment; do
+    mark_opaque_expansions "$segment"
+  done <<< "$1"
+}
+
 GIT_COMMANDS=""
 IMPLICIT_GIT=0
 EMBEDDED_SHELL=0
@@ -668,6 +731,10 @@ if [[ "$COMMAND" =~ ^[[:space:]]*cd[[:space:]]+[^\;\&\|]+[[:space:]]*\&\&[[:spac
   SAFE_CD_CHAIN=1
 fi
 if ! segments=$(command_segments); then
+  printf '%s\n' 'git-safe: command inspection failed.' >&2
+  exit 2
+fi
+if ! segments=$(mark_opaque_segments "$segments"); then
   printf '%s\n' 'git-safe: command inspection failed.' >&2
   exit 2
 fi
@@ -847,6 +914,136 @@ block() {
   printf '%s\n' "$msg" >&2
   exit 2
 }
+
+# Opaque markers represent words whose values are unknown until execution.
+# Unquoted values can split into multiple argv entries or join literal text.
+# Either may become a guarded flag or refspec. A quoted commit message is
+# data after -m/--message.
+check_opaque_git_operands() {
+  local line words=() i j verb previous
+  while IFS= read -r line; do
+    read -r -a words <<< "$line"
+    for ((i = 0; i + 1 < ${#words[@]}; i++)); do
+      is_git_binary_token "${words[$i]}" || continue
+      verb="${words[$((i + 1))]}"
+      if is_opaque_word "$verb"; then
+        block "Git subcommand is selected at runtime and cannot be inspected."
+      fi
+      case "$verb" in
+        status|log|show|diff|rev-parse|ls-files|ls-tree|cat-file|check-attr|check-ignore|for-each-ref|add)
+          break ;;
+      esac
+      for ((j = i + 2; j < ${#words[@]}; j++)); do
+        if ! is_opaque_word "${words[$j]}"; then
+          continue
+        fi
+        previous="${words[$((j - 1))]}"
+        if [ "$verb" = "commit" ] && [ "${words[$j]}" = "__GIT_SAFE_OPAQUE_Q__" ] &&
+           { [ "$previous" = "-m" ] || [ "$previous" = "--message" ]; }; then
+          continue
+        fi
+        block "Git argument is selected at runtime and may change a guarded operation."
+      done
+      break
+    done
+  done <<< "$GIT_COMMANDS"
+}
+
+# The scanner retains literal -c values but represents a quoted value with
+# spaces as an opaque marker. Either may define an alias that rewrites it.
+check_inline_alias_config() {
+  local segment normalized words=() i git_index token value prior_config=0
+  while IFS= read -r segment; do
+    if segment_sets_git_config "$segment"; then
+      prior_config=1
+    fi
+    normalized=$(strip_git_globals "$segment")
+    is_git_command_segment "$normalized" || continue
+    [ "$prior_config" = "0" ] ||
+      block "Git configuration is selected at runtime and may define an alias."
+    read -r -a words <<< "$segment"
+    git_index=-1
+    for ((i = 0; i < ${#words[@]}; i++)); do
+      if is_git_binary_token "${words[$i]}" || is_opaque_word "${words[$i]}"; then
+        git_index=$i
+        break
+      fi
+    done
+    [ "$git_index" -ge 0 ] || continue
+    for ((i = 0; i < git_index; i++)); do
+      case "${words[$i]}" in
+        GIT_CONFIG_*=*|HOME=*|XDG_CONFIG_HOME=*)
+          block "Git configuration source is selected at runtime." ;;
+      esac
+    done
+    for ((i = git_index + 1; i < ${#words[@]}; i++)); do
+      token="${words[$i]}"
+      case "$token" in
+        -c|--config-env)
+          value="${words[$((i + 1))]:-}"
+          i=$((i + 1)) ;;
+        -c?*) value="${token#-c}" ;;
+        --config-env=*) value="${token#--config-env=}" ;;
+        -C|--git-dir|--work-tree|--namespace|--super-prefix)
+          i=$((i + 1)); continue ;;
+        -*) continue ;;
+        *) break ;;
+      esac
+      value=$(printf '%s' "$value" | tr '[:upper:]' '[:lower:]')
+      case "$value" in
+        *__git_safe_opaque_q__*|*__git_safe_opaque_u__*|alias.*|include.*|includeif.*|help.autocorrect=*)
+          block "Git alias configuration cannot be inspected safely." ;;
+      esac
+    done
+  done <<< "$segments"
+}
+
+# Git itself resolves global, conditional-include, and repository aliases.
+# An alias may expand to destructive Git options or arbitrary shell code.
+# Built-in commands take precedence over aliases.
+check_configured_aliases() {
+  local builtins line words=() i verb target key rc prior_git_config=0
+  if ! builtins=$(git --list-cmds=builtins 2>/dev/null); then
+    block "Git built-in command inventory is unavailable."
+  fi
+  while IFS= read -r line; do
+    read -r -a words <<< "$line"
+    for ((i = 0; i + 1 < ${#words[@]}; i++)); do
+      is_git_binary_token "${words[$i]}" || continue
+      verb="${words[$((i + 1))]}"
+      [[ "$verb" =~ ^[A-Za-z0-9][A-Za-z0-9_.-]*$ ]] ||
+        block "Git subcommand cannot be inspected safely."
+      if [ "$verb" = "config" ]; then
+        # A previous segment may define an alias before this payload invokes
+        # it; inspecting only the pre-tool repository snapshot is insufficient.
+        prior_git_config=1
+      fi
+      if printf '%s\n' "$builtins" | grep -Fqx "$verb"; then
+        break
+      fi
+      [ "$prior_git_config" = "0" ] ||
+        block "Git configuration may have changed before alias inspection."
+      [ "$UNRESOLVED_TARGET" = "0" ] ||
+        block "Git alias target cannot be resolved safely."
+      for target in "${TARGET_DIRS[@]}"; do
+        for key in "alias.$verb" "alias.$verb.command"; do
+          if env -u GIT_DIR -u GIT_WORK_TREE -u GIT_OBJECT_DIRECTORY \
+            git -C "$target" config --get "$key" >/dev/null 2>&1; then
+            block "Git alias '$verb' may execute a guarded operation."
+          else
+            rc=$?
+            [ "$rc" -eq 1 ] || block "Git alias inspection failed."
+          fi
+        done
+      done
+      break
+    done
+  done <<< "$GIT_COMMANDS"
+}
+
+check_opaque_git_operands
+check_inline_alias_config
+check_configured_aliases
 
 # --- Destructive operation checks ---
 

@@ -651,6 +651,136 @@ assert_allowed "printed quoted Git fragments do not execute" \
   "$(hook_input_at "echo g'it' reset --hard" "$TMPDIR/denied")"
 assert_allowed "runtime-selected executable with safe arguments remains allowed" \
   "$(hook_input_at 'env "$GIT_BIN" status' "$TMPDIR/denied")"
+
+# Runtime-selected Git operands and aliases are executable policy inputs, not
+# inert prose. These payloads are inspected by the hook; they are not executed.
+echo ""
+echo "Runtime-selected operands and Git aliases:"
+assert_blocked "runtime-selected Git verb cannot hide hard reset" \
+  "$(hook_input_at 'git "$VERB" --hard' "$TMPDIR/denied")"
+assert_blocked "quoted fragment cannot complete hard-reset verb" \
+  "$(hook_input_at 'git re"$PART"set --hard' "$TMPDIR/denied")"
+assert_blocked "quoted fragment cannot complete hard-reset flag" \
+  "$(hook_input_at 'git reset --ha"$PART"' "$TMPDIR/denied")"
+assert_blocked "quoted fragment cannot complete force-push flag" \
+  "$(hook_input_at 'git push --for"$PART" origin feature' "$TMPDIR/denied")"
+assert_blocked "quoted fragment cannot complete clean verb" \
+  "$(hook_input_at 'git cl"$PART"ean -f' "$TMPDIR/denied")"
+assert_blocked "quoted fragment cannot complete Git executable" \
+  "$(hook_input_at 'g"$PART"it reset --hard' "$TMPDIR/denied")"
+assert_blocked "quoted fragment cannot complete Git alias name" \
+  "$(hook_input_at 'git wi"$PART"pe' "$TMPDIR/denied")"
+assert_blocked "unquoted fragment cannot complete hard-reset verb" \
+  "$(hook_input_at 'git re${PART}set --hard' "$TMPDIR/denied")"
+assert_blocked "unquoted fragment cannot complete hard-reset flag" \
+  "$(hook_input_at 'git reset --ha$PART' "$TMPDIR/denied")"
+assert_blocked "unquoted Git verb cannot hide hard reset" \
+  "$(hook_input_at 'git $VERB --hard' "$TMPDIR/denied")"
+assert_blocked "braced Git verb cannot hide hard reset" \
+  "$(hook_input_at 'git ${VERB} --hard' "$TMPDIR/denied")"
+assert_blocked "command substitution cannot select a destructive Git verb" \
+  "$(hook_input_at 'git $(printf reset) --hard' "$TMPDIR/denied")"
+assert_blocked "runtime-selected reset mode cannot hide --hard" \
+  "$(hook_input_at 'git reset "$MODE"' "$TMPDIR/denied")"
+assert_blocked "unquoted reset mode cannot hide --hard" \
+  "$(hook_input_at 'git reset $MODE' "$TMPDIR/denied")"
+assert_blocked "runtime-selected push flag cannot hide --force" \
+  "$(hook_input_at 'git push "$FLAG" origin feature' "$TMPDIR/denied")"
+assert_blocked "unquoted push flag cannot hide --force" \
+  "$(hook_input_at 'git push $FLAG origin feature' "$TMPDIR/denied")"
+assert_blocked "runtime-selected push refspec cannot delete a branch" \
+  "$(hook_input_at 'git push origin "$REFSPEC"' "$TMPDIR/denied")"
+assert_blocked "runtime-selected clean flag cannot hide -f" \
+  "$(hook_input_at 'git clean "$FLAG"' "$TMPDIR/denied")"
+assert_blocked "unquoted clean flag cannot hide -f" \
+  "$(hook_input_at 'git clean $FLAG' "$TMPDIR/denied")"
+assert_blocked "runtime-selected commit option cannot hide --no-verify" \
+  "$(hook_input_at 'git commit "$OPTION" -m message' "$TMPDIR/denied")"
+assert_blocked "unquoted commit message may split into --no-verify" \
+  "$(hook_input_at 'git commit -m $MESSAGE' "$TMPDIR/denied")"
+assert_blocked "unquoted Git executable cannot hide hard reset" \
+  "$(hook_input_at '$GIT_BIN reset --hard' "$TMPDIR/denied")"
+assert_blocked "runtime Git global config cannot hide alias definition" \
+  "$(hook_input_at 'git -c $CONFIG injected' "$TMPDIR/denied")"
+assert_allowed "runtime-selected status path is read-only" \
+  "$(hook_input_at 'git status "$PATHSPEC"' "$TMPDIR/denied")"
+assert_allowed "unquoted status path remains read-only" \
+  "$(hook_input_at 'git status $PATHSPEC' "$TMPDIR/denied")"
+assert_allowed "runtime-selected commit message is data" \
+  "$(hook_input_at 'git commit -m "$MESSAGE"' "$TMPDIR/denied")"
+assert_allowed "escaped dollar in commit message is literal data" \
+  "$(hook_input_at 'git commit -m \$MESSAGE' "$TMPDIR/denied")"
+assert_allowed "literal Q in Git path remains data" \
+  "$(hook_input_at 'git status --short Q' "$TMPDIR/denied")"
+assert_allowed "single-quoted dollar in commit message is literal data" \
+  "$(hook_input_at "git commit -m '\$MESSAGE'" "$TMPDIR/denied")"
+assert_blocked "separate runtime commit argument may be --no-verify" \
+  "$(hook_input_at 'git commit -m git "$MESSAGE"' "$TMPDIR/denied")"
+assert_allowed "literal Git path after quoted commit message is data" \
+  "$(hook_input_at 'git commit -m "$MESSAGE" git' "$TMPDIR/denied")"
+assert_allowed "literal Git path in status is data" \
+  "$(hook_input_at 'git status --short git "$PATHSPEC"' "$TMPDIR/denied")"
+assert_allowed "literal Git path in add is data" \
+  "$(hook_input_at 'git add git "$PATHSPEC"' "$TMPDIR/denied")"
+assert_allowed "Git config assignment text in commit message is data" \
+  "$(hook_input_at 'git commit -m GIT_CONFIG_COUNT=1' "$TMPDIR/denied")"
+assert_allowed "Git config assignment text in status path is data" \
+  "$(hook_input_at 'git status GIT_CONFIG_COUNT=1' "$TMPDIR/denied")"
+assert_allowed "runtime-selected add path is not a guarded effect" \
+  "$(hook_input_at 'git add "$PATHSPEC"' "$TMPDIR/denied")"
+
+git -C "$TMPDIR/denied" config alias.wipe 'reset --hard'
+git -C "$TMPDIR/denied" config alias.a.b 'reset --hard'
+git -C "$TMPDIR/denied" config alias.shellwipe '!git reset --hard'
+git -C "$TMPDIR/denied" config alias.globalwipe '-c color.ui=false reset --hard'
+git -C "$TMPDIR/denied" config alias.status 'reset --hard'
+mkdir -p "$TMPDIR/alias-home" "$TMPDIR/alias-included"
+git init -q "$TMPDIR/alias-included"
+HOME="$TMPDIR/alias-home" git config --global alias.homewipe 'reset --hard'
+printf '[alias]\n  includedwipe = reset --hard\n' > "$TMPDIR/alias-include.cfg"
+git -C "$TMPDIR/alias-included" config include.path "$TMPDIR/alias-include.cfg"
+assert_blocked "repository Git alias cannot hide hard reset" \
+  "$(hook_input_at 'git wipe' "$TMPDIR/denied")"
+assert_blocked "dotted repository Git alias cannot hide hard reset" \
+  "$(hook_input_at 'git a.b' "$TMPDIR/denied")"
+assert_blocked "alias invocation with different case cannot hide hard reset" \
+  "$(hook_input_at 'git WIPE' "$TMPDIR/denied")"
+assert_blocked "shell wrapper cannot hide a configured Git alias" \
+  "$(hook_input_at "bash -c 'git wipe'" "$TMPDIR/denied")"
+assert_blocked "Git -C resolves aliases in its target repository" \
+  "$(hook_input_at "git -C $TMPDIR/denied wipe" "$TMPDIR/session")"
+assert_blocked "redirected Git directory cannot borrow alias lookup from session" \
+  "$(hook_input_at "GIT_DIR=$TMPDIR/denied/.git git wipe" "$TMPDIR/session")"
+assert_blocked "shell Git alias cannot hide hard reset" \
+  "$(hook_input_at 'git shellwipe' "$TMPDIR/denied")"
+assert_blocked "alias with Git globals cannot hide hard reset" \
+  "$(hook_input_at 'git globalwipe' "$TMPDIR/denied")"
+assert_blocked "inline Git alias cannot hide hard reset" \
+  "$(hook_input_at "git -c alias.inline='reset --hard' inline" "$TMPDIR/denied")"
+assert_blocked "quoted inline Git alias cannot hide hard reset" \
+  "$(hook_input_at "git -c 'alias.inline=reset --hard' inline" "$TMPDIR/denied")"
+HOME="$TMPDIR/alias-home" assert_blocked "global Git alias cannot hide hard reset" \
+  "$(hook_input_at 'git homewipe' "$TMPDIR/denied")"
+assert_blocked "wrapper HOME override cannot hide global Git alias" \
+  "$(hook_input_at "env HOME=$TMPDIR/alias-home git homewipe" "$TMPDIR/denied")"
+assert_blocked "included Git alias cannot hide hard reset" \
+  "$(hook_input_at 'git includedwipe' "$TMPDIR/alias-included")"
+assert_blocked "runtime Git config cannot inject an alias" \
+  "$(hook_input_at 'GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=alias.injected GIT_CONFIG_VALUE_0="reset --hard" git injected' "$TMPDIR/denied")"
+assert_blocked "prior exported Git config cannot inject an alias" \
+  "$(hook_input_at 'export GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=alias.injected GIT_CONFIG_VALUE_0="reset --hard"; git injected' "$TMPDIR/denied")"
+assert_blocked "alias created earlier in the same payload cannot hide hard reset" \
+  "$(hook_input_at 'git config alias.runtimex reset; git runtimex --hard' "$TMPDIR/denied")"
+assert_blocked "alias created before a conditional call cannot hide hard reset" \
+  "$(hook_input_at 'git config alias.runtimex reset && git runtimex --hard' "$TMPDIR/denied")"
+assert_allowed "Git config followed by a built-in status command" \
+  "$(hook_input_at 'git config user.name Test; git status' "$TMPDIR/denied")"
+assert_allowed "Git alias cannot replace a built-in status command" \
+  "$(hook_input_at 'git status' "$TMPDIR/denied")"
+assert_allowed "printed alias declaration is data" \
+  "$(hook_input_at "printf '%s\\n' 'git -c alias.inline=reset --hard inline'" "$TMPDIR/denied")"
+assert_allowed "printed Git config assignment is data" \
+  "$(hook_input_at "printf '%s\\n' 'GIT_CONFIG_COUNT=1'; git status" "$TMPDIR/denied")"
 assert_blocked "inline worktree cannot borrow session allowlist" \
   "$(hook_input_at "GIT_WORK_TREE=$TMPDIR/target git reset --hard" "$TMPDIR/session")"
 assert_blocked "exported worktree cannot borrow session allowlist" \

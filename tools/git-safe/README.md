@@ -69,6 +69,17 @@ Shell quotes around literal executable names, Git options, and Git environment
 assignments are removed for inspection. If an executable is selected by an
 expansion, destructive Git-shaped arguments are checked with an unresolved
 target; a shell-scanner failure denies the tool call.
+Runtime-selected Git subcommands and arguments that may become guarded flags
+or refspecs are denied until their values are known, including values joined
+to literal verb or flag fragments. Unquoted expansions can
+split into multiple arguments, so even an unquoted commit message is treated
+as uncertain. Read-only commands, `git add` paths, and quoted `git commit -m`
+message text remain allowed. Configured
+Git aliases are denied because they can expand to another Git command or shell
+code; inline alias configuration and runtime `GIT_CONFIG_*` overrides are
+also denied. If an earlier command in the same payload may change Git
+configuration, later non-built-in Git commands are denied until the new
+configuration can be inspected.
 Repeated `-C` targets are treated as ambiguous and require an
 explicit `GIT_SAFE_CONFIG` override for a guarded operation.
 Inherited, inline, or earlier exported `GIT_DIR`, `GIT_WORK_TREE`, or
@@ -80,7 +91,7 @@ command they run. Split strings passed to `env -S` are treated conservatively:
 a literal mention of a destructive Git command inside such a string may be
 blocked even when its intended executable only prints that text.
 
-Safe operations (`git status`, `git commit`, `git push`, `git branch -d`, etc.) pass through without interference.
+Literal safe operations (`git status`, `git commit`, `git push`, `git branch -d`, etc.) pass through.
 
 ## Part of Boucle
 
