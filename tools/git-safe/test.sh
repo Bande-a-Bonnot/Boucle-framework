@@ -655,6 +655,20 @@ assert_allowed "printed quoted Git fragments do not execute" \
   "$(hook_input_at "echo g'it' reset --hard" "$TMPDIR/denied")"
 assert_allowed "runtime-selected executable with safe arguments remains allowed" \
   "$(hook_input_at 'env "$GIT_BIN" status' "$TMPDIR/denied")"
+assert_allowed "opaque non-Git executable remains allowed" \
+  "$(hook_input_at '"$VENV/bin/pytest" tests' "$TMPDIR/denied")"
+assert_allowed "embedded safe commit with Git global option remains allowed" \
+  "$(hook_input_at 'git -C '"$TMPDIR"'/denied commit -m "$(cat msg)"' "$TMPDIR/denied")"
+assert_blocked "runtime shell command cannot hide hard reset" \
+  "$(hook_input_at 'bash -c "$COMMAND"' "$TMPDIR/denied")"
+assert_blocked "runtime eval command cannot hide hard reset" \
+  "$(hook_input_at 'eval "$COMMAND"' "$TMPDIR/denied")"
+assert_blocked "shell script execution cannot hide hard reset" \
+  "$(hook_input_at 'bash ./deploy.sh' "$TMPDIR/denied")"
+assert_blocked "direct script execution cannot hide hard reset" \
+  "$(hook_input_at './deploy.sh' "$TMPDIR/denied")"
+assert_blocked "sourced script cannot hide hard reset" \
+  "$(hook_input_at 'source ./commands.sh' "$TMPDIR/denied")"
 
 # Runtime-selected Git operands and aliases are executable policy inputs, not
 # inert prose. These payloads are inspected by the hook; they are not executed.
@@ -737,10 +751,16 @@ git -C "$TMPDIR/denied" config alias.wipe 'reset --hard'
 git -C "$TMPDIR/denied" config alias.a.b 'reset --hard'
 git -C "$TMPDIR/denied" config alias.shellwipe '!git reset --hard'
 git -C "$TMPDIR/denied" config alias.globalwipe '-c color.ui=false reset --hard'
+mkdir -p "$TMPDIR/prior-shell-config"
+git init -q "$TMPDIR/prior-shell-config"
 git -C "$TMPDIR/denied" config alias.status 'reset --hard'
-mkdir -p "$TMPDIR/alias-home" "$TMPDIR/alias-included"
+mkdir -p "$TMPDIR/alias-home" "$TMPDIR/alias-included" "$TMPDIR/alias-xdg" "$TMPDIR/alias-empty-home"
 git init -q "$TMPDIR/alias-included"
+git init -q "$TMPDIR/alias-target"
+git init -q "$TMPDIR/xdg-target"
 HOME="$TMPDIR/alias-home" git config --global alias.homewipe 'reset --hard'
+XDG_CONFIG_HOME="$TMPDIR/alias-xdg" HOME="$TMPDIR/alias-empty-home" \
+  git config --global alias.xdgwipe 'reset --hard'
 printf '[alias]\n  includedwipe = reset --hard\n' > "$TMPDIR/alias-include.cfg"
 git -C "$TMPDIR/alias-included" config include.path "$TMPDIR/alias-include.cfg"
 assert_blocked "repository Git alias cannot hide hard reset" \
@@ -767,6 +787,10 @@ HOME="$TMPDIR/alias-home" assert_blocked "global Git alias cannot hide hard rese
   "$(hook_input_at 'git homewipe' "$TMPDIR/denied")"
 assert_blocked "wrapper HOME override cannot hide global Git alias" \
   "$(hook_input_at "env HOME=$TMPDIR/alias-home git homewipe" "$TMPDIR/denied")"
+assert_blocked "prior HOME assignment cannot hide global Git alias" \
+  "$(hook_input_at "HOME=$TMPDIR/alias-home; git homewipe" "$TMPDIR/alias-target")"
+assert_blocked "prior XDG config assignment cannot hide global Git alias" \
+  "$(hook_input_at "XDG_CONFIG_HOME=$TMPDIR/alias-xdg HOME=$TMPDIR/alias-empty-home; git xdgwipe" "$TMPDIR/xdg-target")"
 assert_blocked "included Git alias cannot hide hard reset" \
   "$(hook_input_at 'git includedwipe' "$TMPDIR/alias-included")"
 assert_blocked "runtime Git config cannot inject an alias" \
@@ -777,6 +801,8 @@ assert_blocked "alias created earlier in the same payload cannot hide hard reset
   "$(hook_input_at 'git config alias.runtimex reset; git runtimex --hard' "$TMPDIR/denied")"
 assert_blocked "alias created before a conditional call cannot hide hard reset" \
   "$(hook_input_at 'git config alias.runtimex reset && git runtimex --hard' "$TMPDIR/denied")"
+assert_blocked "shell-created alias before a later call cannot hide hard reset" \
+  "$(hook_input_at "printf '[alias]\\n  wipe = reset --hard\\n' > .git/config; git wipe" "$TMPDIR/prior-shell-config")"
 assert_allowed "Git config followed by a built-in status command" \
   "$(hook_input_at 'git config user.name Test; git status' "$TMPDIR/denied")"
 assert_allowed "Git alias cannot replace a built-in status command" \

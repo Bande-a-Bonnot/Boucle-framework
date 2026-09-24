@@ -454,6 +454,29 @@ is_opaque_word() {
   esac
 }
 
+is_uninspectable_script_segment() {
+  local segment="$1" words=() i=0 token
+  read -r -a words <<< "$segment"
+  [ ${#words[@]} -gt 0 ] || return 1
+  case "${words[0]}" in
+    source|.) return 0 ;;
+    *.sh|./*.sh|../*.sh) return 0 ;;
+    bash|sh|zsh|dash|ksh) ;;
+    *) return 1 ;;
+  esac
+  i=1
+  while [ $i -lt ${#words[@]} ]; do
+    token="${words[$i]}"
+    case "$token" in
+      -c) return 1 ;;
+      -*) i=$((i + 1)); continue ;;
+      *.sh|./*.sh|../*.sh) return 0 ;;
+      *) return 1 ;;
+    esac
+  done
+  return 1
+}
+
 is_git_command_segment() {
   local segment="$1"
   local words=()
@@ -724,6 +747,9 @@ WRAPPER_CWD=0
 OPAQUE_EXEC=0
 CURRENT_OPAQUE_EXEC=0
 GIT_CANDIDATE_INDEX=0
+OPAQUE_EXEC_LINES=""
+DYNAMIC_SHELL=0
+UNINSPECTABLE_SCRIPT=0
 SAFE_CD_CHAIN=0
 # Only this single, guarded cd form can omit the starting cwd from policy
 # checks. Other control flow may run Git in the starting directory.
@@ -749,12 +775,20 @@ while IFS= read -r segment; do
   fi
   if is_embedded_shell_segment "$segment"; then
     EMBEDDED_SHELL=1
+    if is_opaque_word "$segment"; then
+      DYNAMIC_SHELL=1
+    fi
+  fi
+  if is_uninspectable_script_segment "$segment"; then
+    UNINSPECTABLE_SCRIPT=1
   fi
   if is_git_command_segment "$normalized"; then
     if [ "$CURRENT_OPAQUE_EXEC" = "1" ]; then
       read -r -a candidate_words <<< "$normalized"
       candidate_words[$GIT_CANDIDATE_INDEX]="git"
       normalized="${candidate_words[*]}"
+      OPAQUE_EXEC_LINES="${OPAQUE_EXEC_LINES}
+$normalized"
     fi
     # Attached env split-string heads have already been normalized to Git;
     # retain their opaque target context instead of borrowing the cwd policy.
@@ -809,6 +843,14 @@ contains_git_text() {
 }
 
 if [ -z "$GIT_COMMANDS" ]; then
+  if [ "$DYNAMIC_SHELL" != "0" ]; then
+    printf '%s\n' 'git-safe: Shell command is selected at runtime and cannot be inspected.' >&2
+    exit 2
+  fi
+  if [ "$UNINSPECTABLE_SCRIPT" != "0" ]; then
+    printf '%s\n' 'git-safe: Script contents cannot be inspected safely.' >&2
+    exit 2
+  fi
   log "SKIP: no executable git command"
   exit 0
 fi
@@ -922,6 +964,7 @@ block() {
 check_opaque_git_operands() {
   local line words=() i j verb previous
   while IFS= read -r line; do
+    line=$(strip_git_globals "$line")
     read -r -a words <<< "$line"
     for ((i = 0; i + 1 < ${#words[@]}; i++)); do
       is_git_binary_token "${words[$i]}" || continue
@@ -1006,7 +1049,14 @@ check_configured_aliases() {
   if ! builtins=$(git --list-cmds=builtins 2>/dev/null); then
     block "Git built-in command inventory is unavailable."
   fi
+  if [[ "$segments" == *$'\n'* ]]; then
+    prior_git_config=1
+  fi
   while IFS= read -r line; do
+    line=$(strip_git_globals "$line")
+    if printf '%s\n' "$OPAQUE_EXEC_LINES" | grep -Fqx "$line"; then
+      continue
+    fi
     read -r -a words <<< "$line"
     for ((i = 0; i + 1 < ${#words[@]}; i++)); do
       is_git_binary_token "${words[$i]}" || continue
@@ -1041,6 +1091,10 @@ check_configured_aliases() {
   done <<< "$GIT_COMMANDS"
 }
 
+[ "$DYNAMIC_SHELL" = "0" ] ||
+  block "Shell command is selected at runtime and cannot be inspected."
+[ "$UNINSPECTABLE_SCRIPT" = "0" ] ||
+  block "Script contents cannot be inspected safely."
 check_opaque_git_operands
 check_inline_alias_config
 check_configured_aliases
