@@ -4,6 +4,11 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 HOOK="$SCRIPT_DIR/hook.sh"
+TMPDIR=$(mktemp -d)
+trap "rm -rf $TMPDIR" EXIT
+TEST_CWD="$TMPDIR/default-cwd"
+mkdir -p "$TEST_CWD"
+cd "$TEST_CWD"
 PASS=0
 FAIL=0
 TOTAL=0
@@ -14,7 +19,8 @@ GREEN='\033[0;32m'
 NC='\033[0m'
 
 hook_input() {
-  jq -cn --arg command "$1" '{"tool_name":"Bash","tool_input":{"command":$command}}'
+  jq -cn --arg command "$1" --arg cwd "$TEST_CWD" \
+    '{"tool_name":"Bash","cwd":$cwd,"tool_input":{"command":$command}}'
 }
 
 hook_input_at() {
@@ -267,9 +273,6 @@ echo ""
 echo "Allowlist config:"
 
 # Create temp config
-TMPDIR=$(mktemp -d)
-trap "rm -rf $TMPDIR" EXIT
-
 mkdir -p "$TMPDIR/fail-awk"
 printf '#!/bin/sh\nexit 1\n' > "$TMPDIR/fail-awk/awk"
 chmod +x "$TMPDIR/fail-awk/awk"
@@ -570,6 +573,7 @@ assert_allowed "escaped substitutions in unquoted here-doc remain literal" \
 # target repo, not from the hook's process cwd or the session's initial repo.
 echo ""
 echo "Global options and target repository policy:"
+unset GIT_DIR GIT_WORK_TREE GIT_OBJECT_DIRECTORY
 mkdir -p "$TMPDIR/session" "$TMPDIR/target" "$TMPDIR/target with spaces" "$TMPDIR/denied"
 git init -q "$TMPDIR/session"
 git init -q "$TMPDIR/target"
