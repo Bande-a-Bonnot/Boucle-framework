@@ -376,10 +376,24 @@ assert_blocked "command substitution cannot combine with a Git global option" \
   "$(hook_input 'echo "$(git --no-advice reset --hard)"')"
 assert_blocked "sudo shell command remains guarded" \
   "$(hook_input "sudo bash -c 'git reset --hard'")"
+assert_blocked "env flags before bash -c remain guarded" \
+  "$(hook_input "env -i bash -c 'git reset --hard'")"
+assert_blocked "sudo flags and arguments before bash -c remain guarded" \
+  "$(hook_input "sudo -u root bash -c 'git reset --hard'")"
+assert_blocked "time flags before bash -c remain guarded" \
+  "$(hook_input "time -p bash -c 'git reset --hard'")"
+assert_blocked "nested command and env wrappers remain guarded" \
+  "$(hook_input "command env -i bash -c 'git reset --hard'")"
+assert_blocked "timeout argument before bash -c remains guarded" \
+  "$(hook_input "timeout 5 bash -c 'git reset --hard'")"
+assert_blocked "nice arguments before bash -c remain guarded" \
+  "$(hook_input "nice -n 10 bash -c 'git reset --hard'")"
 assert_allowed "single-quoted backticks in commit prose are literal" \
   "$(hook_input "git commit -m 'docs mention \`git reset --hard\`'")"
 assert_allowed "single-quoted command substitution in commit prose is literal" \
   "$(hook_input "git commit -m 'docs mention \$(git reset --hard)'")"
+assert_allowed "single-quoted wrapper prose remains literal" \
+  "$(hook_input "git commit -m 'docs mention env -i bash -c git reset --hard'")"
 HEREDOC_LITERAL_SUBSTITUTION=$(cat <<'CMD'
 git commit -F - <<'EOF'
 document `git reset --hard` and $(git reset --hard)
@@ -388,6 +402,40 @@ CMD
 )
 assert_allowed "literal here-doc substitution examples remain prose" \
   "$(hook_input "$HEREDOC_LITERAL_SUBSTITUTION")"
+UNQUOTED_HEREDOC_SUBSTITUTION=$(cat <<'CMD'
+cat <<EOF
+$(git reset --hard)
+EOF
+CMD
+)
+assert_blocked "unquoted here-doc command substitution executes" \
+  "$(hook_input "$UNQUOTED_HEREDOC_SUBSTITUTION")"
+UNQUOTED_HEREDOC_BACKTICKS=$(cat <<'CMD'
+cat <<EOF
+`git reset --hard`
+EOF
+CMD
+)
+assert_blocked "unquoted here-doc backticks execute" \
+  "$(hook_input "$UNQUOTED_HEREDOC_BACKTICKS")"
+QUOTED_HEREDOC_LITERAL=$(cat <<'CMD'
+cat <<'EOF'
+$(git reset --hard)
+`git reset --hard`
+EOF
+CMD
+)
+assert_allowed "quoted here-doc body does not execute substitutions" \
+  "$(hook_input "$QUOTED_HEREDOC_LITERAL")"
+ESCAPED_HEREDOC_LITERAL=$(cat <<'CMD'
+cat <<EOF
+\$(git reset --hard)
+\`git reset --hard\`
+EOF
+CMD
+)
+assert_allowed "escaped substitutions in unquoted here-doc remain literal" \
+  "$(hook_input "$ESCAPED_HEREDOC_LITERAL")"
 
 # Global Git options must not hide the subcommand.  Resolve .git-safe from the
 # target repo, not from the hook's process cwd or the session's initial repo.

@@ -66,16 +66,17 @@ log() {
 }
 
 # Print command segments split on unquoted shell separators. Quoted arguments
-# become opaque Q tokens and here-doc bodies become spaces: their contents
-# cannot masquerade as Git commands, while a quoted -C directory still occupies
-# one argument when global options are normalized later.
+# become opaque Q tokens and here-doc bodies become spaces; substitutions in
+# unquoted bodies still emit an execution marker. A quoted -C directory still
+# occupies one argument when global options are normalized later.
 command_segments() {
   awk '
-    function reset_heredoc(delim) {
+    function reset_heredoc(delim, quoted) {
       heredoc = delim
+      heredoc_quoted = quoted
     }
 
-    function maybe_heredoc(line,    i, c, n, q, delim) {
+    function maybe_heredoc(line,    i, c, n, q, delim, quoted) {
       for (i = 1; i <= length(line); i++) {
         c = substr(line, i, 1)
         n = substr(line, i + 1, 1)
@@ -89,20 +90,26 @@ command_segments() {
           }
           q = substr(line, i, 1)
           delim = ""
+          quoted = 0
           if (q == "\"" || q == "'\''") {
+            quoted = 1
             i++
             while (i <= length(line) && substr(line, i, 1) != q) {
               delim = delim substr(line, i, 1)
               i++
             }
           } else {
+            if (q == "\\") {
+              quoted = 1
+              i++
+            }
             while (i <= length(line) && substr(line, i, 1) !~ /[ \t;&|]/) {
               delim = delim substr(line, i, 1)
               i++
             }
           }
           if (delim != "") {
-            reset_heredoc(delim)
+            reset_heredoc(delim, quoted)
             return
           }
         }
@@ -113,6 +120,28 @@ command_segments() {
       if (heredoc != "") {
         if ($0 == heredoc) {
           heredoc = ""
+          heredoc_quoted = 0
+          print ""
+          next
+        }
+        if (!heredoc_quoted) {
+          esc = 0
+          for (i = 1; i <= length($0); i++) {
+            c = substr($0, i, 1)
+            n = substr($0, i + 1, 1)
+            if (esc) {
+              esc = 0
+              continue
+            }
+            if (c == "\\") {
+              esc = 1
+              continue
+            }
+            if (c == "`" || (c == "$" && n == "(")) {
+              print "__GIT_SAFE_EMBEDDED__"
+              break
+            }
+          }
         }
         print ""
         next
@@ -227,7 +256,7 @@ is_git_command_segment() {
 }
 
 is_embedded_shell_segment() {
-  local segment="$1" words=() i=0 token option
+  local segment="$1" words=() i=0 j=0 token option
   read -r -a words <<< "$segment"
   [ ${#words[@]} -gt 0 ] || return 1
 
@@ -244,18 +273,24 @@ is_embedded_shell_segment() {
   [ $i -lt ${#words[@]} ] || return 1
   token="${words[$i]##*/}"
   [ "$token" = "eval" ] && return 0
-  case "$token" in bash|sh|zsh|dash|ksh) ;; *) return 1 ;; esac
 
-  for ((i = i + 1; i < ${#words[@]}; i++)); do
-    option="${words[$i]}"
-    if [[ "$option" =~ ^-[a-zA-Z]*c[a-zA-Z]*$ ]]; then
-      return 0
-    fi
-    case "$option" in
-      --) return 1 ;;
-      -*) ;;
-      *) return 1 ;;
-    esac
+  # Wrappers such as `env -i`, `sudo -u root`, and `time -p` can put the
+  # shell beyond the first executable token.  The segment has already had
+  # quoted arguments scrubbed, so scan its remaining executable words.
+  for ((i = 0; i < ${#words[@]}; i++)); do
+    token="${words[$i]##*/}"
+    case "$token" in bash|sh|zsh|dash|ksh) ;; *) continue ;; esac
+    for ((j = i + 1; j < ${#words[@]}; j++)); do
+      option="${words[$j]}"
+      if [[ "$option" =~ ^-[a-zA-Z]*c[a-zA-Z]*$ ]]; then
+        return 0
+      fi
+      case "$option" in
+        --) break ;;
+        -*) ;;
+        *) break ;;
+      esac
+    done
   done
   return 1
 }

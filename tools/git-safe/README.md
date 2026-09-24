@@ -63,8 +63,9 @@ GIT_SAFE_CONFIG=path  # Custom config file location
 git-safe is a [PreToolUse hook](https://docs.anthropic.com/en/docs/claude-code/hooks) that inspects Bash commands before execution. It normalizes Git global options such as `-C` before matching destructive subcommands, then blocks with a human-readable reason on `stderr` plus exit code `2`.
 
 Executable shell strings (`eval`, shell `-c`, and command substitutions) are
-checked too. Literal examples in single-quoted arguments and here-doc bodies
-remain inert. Repeated `-C` targets are treated as ambiguous and require an
+checked too, including substitutions in unquoted here-doc bodies. Literal
+examples in single-quoted arguments and quoted here-doc bodies remain inert.
+Repeated `-C` targets are treated as ambiguous and require an
 explicit `GIT_SAFE_CONFIG` override for a guarded operation.
 
 Safe operations (`git status`, `git commit`, `git push`, `git branch -d`, etc.) pass through without interference.
