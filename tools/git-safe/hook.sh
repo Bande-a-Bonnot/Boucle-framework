@@ -370,8 +370,10 @@ done < <(command_segments)
 # inferred safely from the outer shell.
 if [ "$EMBEDDED_SHELL" = "1" ]; then
   embedded_text=$(printf '%s' "$COMMAND" | tr '\047\042\140\044\050\051' '      ')
-  GIT_COMMANDS="$GIT_COMMANDS
-$(strip_git_globals "$embedded_text")"
+  while IFS= read -r embedded_line; do
+    GIT_COMMANDS="$GIT_COMMANDS
+$(strip_git_globals "$embedded_line")"
+  done <<< "$embedded_text"
   GIT_COMMANDS="$GIT_COMMANDS
 $COMMAND"
 fi

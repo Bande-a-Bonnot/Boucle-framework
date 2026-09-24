@@ -418,6 +418,28 @@ CMD
 )
 assert_blocked "unquoted here-doc backticks execute" \
   "$(hook_input "$UNQUOTED_HEREDOC_BACKTICKS")"
+UNQUOTED_HEREDOC_GLOBAL=$(cat <<'CMD'
+cat <<EOF
+$(git --no-advice reset --hard)
+EOF
+CMD
+)
+assert_blocked "unquoted here-doc substitution with Git global option executes" \
+  "$(hook_input "$UNQUOTED_HEREDOC_GLOBAL")"
+MULTILINE_GLOBAL_SUBSTITUTION=$(cat <<'CMD'
+echo ok
+$(git --no-advice reset --hard)
+CMD
+)
+assert_blocked "multiline command substitution with Git global option executes" \
+  "$(hook_input "$MULTILINE_GLOBAL_SUBSTITUTION")"
+MULTILINE_GLOBAL_SHELL=$(cat <<'CMD'
+echo ok
+bash -c 'git --no-advice reset --hard'
+CMD
+)
+assert_blocked "multiline shell -c with Git global option executes" \
+  "$(hook_input "$MULTILINE_GLOBAL_SHELL")"
 QUOTED_HEREDOC_LITERAL=$(cat <<'CMD'
 cat <<'EOF'
 $(git reset --hard)
@@ -427,6 +449,14 @@ CMD
 )
 assert_allowed "quoted here-doc body does not execute substitutions" \
   "$(hook_input "$QUOTED_HEREDOC_LITERAL")"
+QUOTED_HEREDOC_GLOBAL=$(cat <<'CMD'
+cat <<'EOF'
+$(git --no-advice reset --hard)
+EOF
+CMD
+)
+assert_allowed "quoted here-doc global-option example remains literal" \
+  "$(hook_input "$QUOTED_HEREDOC_GLOBAL")"
 ESCAPED_HEREDOC_LITERAL=$(cat <<'CMD'
 cat <<EOF
 \$(git reset --hard)
