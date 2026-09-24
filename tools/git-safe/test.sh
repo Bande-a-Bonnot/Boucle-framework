@@ -360,6 +360,34 @@ assert_blocked "backtick substitution executes a destructive command" \
   "$(hook_input 'echo `git reset --hard`')"
 assert_blocked "commit message substitution executes before commit" \
   "$(hook_input 'git commit -m "$(git reset --hard)"')"
+assert_blocked "eval executes a quoted destructive command" \
+  "$(hook_input "eval 'git reset --hard'")"
+assert_blocked "bash options before -c execute a destructive command" \
+  "$(hook_input "bash -e -c 'git reset --hard'")"
+assert_blocked "dash -c executes a destructive command" \
+  "$(hook_input "dash -c 'git reset --hard'")"
+assert_blocked "ksh options before -c execute a destructive command" \
+  "$(hook_input "ksh -e -c 'git reset --hard'")"
+assert_blocked "eval cannot combine shell wrapping and a Git global option" \
+  "$(hook_input "eval 'git --no-advice reset --hard'")"
+assert_blocked "bash -c cannot combine shell wrapping and a Git global option" \
+  "$(hook_input "bash -c 'git --no-advice reset --hard'")"
+assert_blocked "command substitution cannot combine with a Git global option" \
+  "$(hook_input 'echo "$(git --no-advice reset --hard)"')"
+assert_blocked "sudo shell command remains guarded" \
+  "$(hook_input "sudo bash -c 'git reset --hard'")"
+assert_allowed "single-quoted backticks in commit prose are literal" \
+  "$(hook_input "git commit -m 'docs mention \`git reset --hard\`'")"
+assert_allowed "single-quoted command substitution in commit prose is literal" \
+  "$(hook_input "git commit -m 'docs mention \$(git reset --hard)'")"
+HEREDOC_LITERAL_SUBSTITUTION=$(cat <<'CMD'
+git commit -F - <<'EOF'
+document `git reset --hard` and $(git reset --hard)
+EOF
+CMD
+)
+assert_allowed "literal here-doc substitution examples remain prose" \
+  "$(hook_input "$HEREDOC_LITERAL_SUBSTITUTION")"
 
 # Global Git options must not hide the subcommand.  Resolve .git-safe from the
 # target repo, not from the hook's process cwd or the session's initial repo.
@@ -386,6 +414,8 @@ assert_blocked "git global -c cannot bypass reset guard" \
   "$(hook_input_at 'git -c color.ui=false reset --hard' "$TMPDIR/target")"
 assert_blocked "git --no-pager cannot bypass reset guard" \
   "$(hook_input_at 'git --no-pager reset --hard' "$TMPDIR/target")"
+assert_blocked "git --no-advice cannot bypass reset guard" \
+  "$(hook_input_at 'git --no-advice reset --hard' "$TMPDIR/target")"
 assert_blocked "cd target cannot borrow session allowlist" \
   "$(hook_input_at "cd $TMPDIR/target && git reset --hard" "$TMPDIR/session")"
 assert_blocked "quoted -C target with spaces is enforced" \
@@ -400,6 +430,10 @@ assert_blocked "attached -c cannot hide reset" \
   "$(hook_input_at 'git -ccolor.ui=false reset --hard' "$TMPDIR/denied")"
 
 echo "allow: reset --hard" > "$TMPDIR/target/.git-safe"
+mkdir -p "$TMPDIR/session/target"
+git init -q "$TMPDIR/session/target"
+assert_blocked "repeated -C cannot borrow independent allowlists" \
+  "$(hook_input_at "git -C session -C target reset --hard" "$TMPDIR")"
 assert_allowed "target's own allowlist permits git -C reset" \
   "$(hook_input_at "git -C $TMPDIR/target reset --hard" "$TMPDIR/session")"
 assert_allowed "target's own allowlist permits cd then reset" \

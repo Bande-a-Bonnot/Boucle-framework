@@ -119,6 +119,7 @@ command_segments() {
       }
 
       out = ""
+      embedded = 0
       sq = 0
       dq = 0
       esc = 0
@@ -150,6 +151,12 @@ command_segments() {
           continue
         }
 
+        # Substitutions execute in unquoted and double-quoted text, but not
+        # inside single quotes.  Here-doc bodies are skipped above.
+        if (!sq && (c == "`" || (c == "$" && n == "("))) {
+          embedded = 1
+        }
+
         if (sq || dq) {
           out = out " "
           continue
@@ -174,6 +181,9 @@ command_segments() {
         out = out c
       }
       print out
+      if (embedded) {
+        print "__GIT_SAFE_EMBEDDED__"
+      }
       maybe_heredoc($0)
     }
   ' <<< "$COMMAND"
@@ -216,27 +226,73 @@ is_git_command_segment() {
   is_git_binary_token "${words[$i]}"
 }
 
+is_embedded_shell_segment() {
+  local segment="$1" words=() i=0 token option
+  read -r -a words <<< "$segment"
+  [ ${#words[@]} -gt 0 ] || return 1
+
+  while [ $i -lt ${#words[@]} ]; do
+    token="${words[$i]}"
+    if [ "$token" = "env" ] || [ "$token" = "command" ] || [ "$token" = "exec" ] ||
+       [ "$token" = "sudo" ] || [ "$token" = "time" ] || [ "$token" = "nohup" ] ||
+       is_assignment_token "$token"; then
+      i=$((i + 1))
+    else
+      break
+    fi
+  done
+  [ $i -lt ${#words[@]} ] || return 1
+  token="${words[$i]##*/}"
+  [ "$token" = "eval" ] && return 0
+  case "$token" in bash|sh|zsh|dash|ksh) ;; *) return 1 ;; esac
+
+  for ((i = i + 1; i < ${#words[@]}; i++)); do
+    option="${words[$i]}"
+    if [[ "$option" =~ ^-[a-zA-Z]*c[a-zA-Z]*$ ]]; then
+      return 0
+    fi
+    case "$option" in
+      --) return 1 ;;
+      -*) ;;
+      *) return 1 ;;
+    esac
+  done
+  return 1
+}
+
 # Git accepts global options between `git` and the subcommand.  Match against
 # each quote-scrubbed executable segment after removing those options, or
 # `git -C dir reset --hard` escapes every `git reset` rule below.  Never rewrite
 # the raw shell command before quote parsing: that can consume a closing quote
 # in harmless prose and hide a later real Git command.
 strip_git_globals() {
-  local command="$1" previous=""
-  while [ "$command" != "$previous" ]; do
-    previous="$command"
-    command=$(printf '%s' "$command" | sed -E "
-      s/(^|[^[:alnum:]_.-])git[[:space:]]+(-C|-c|--git-dir|--work-tree|--namespace|--config-env|--super-prefix)[[:space:]]+(\"[^\"]*\"|'[^']*'|[^[:space:]]+)/\\1git/g
-      s/(^|[^[:alnum:]_.-])git[[:space:]]+-C[^[:space:]]+/\1git/g
-      s/(^|[^[:alnum:]_.-])git[[:space:]]+-c[^[:space:]]+/\1git/g
-      s/(^|[^[:alnum:]_.-])git[[:space:]]+(--git-dir|--work-tree|--namespace|--exec-path|--config-env|--super-prefix)=[^[:space:]]+/\1git/g
-      s/(^|[^[:alnum:]_.-])git[[:space:]]+(-p|-P|--paginate|--no-pager|--bare|--no-replace-objects|--literal-pathspecs|--glob-pathspecs|--noglob-pathspecs|--icase-pathspecs|--no-optional-locks)([[:space:]])/\1git\3/g
-    ")
+  local command="$1" words=() output=() i=0 token
+  read -r -a words <<< "$command"
+  while [ $i -lt ${#words[@]} ]; do
+    token="${words[$i]}"
+    output+=("$token")
+    i=$((i + 1))
+    if ! is_git_binary_token "$token"; then
+      continue
+    fi
+    while [ $i -lt ${#words[@]} ]; do
+      token="${words[$i]}"
+      case "$token" in
+        -C|-c|--git-dir|--work-tree|--namespace|--config-env|--super-prefix)
+          i=$((i + 2)) ;;
+        -C?*|-c?*|--git-dir=*|--work-tree=*|--namespace=*|--exec-path=*|--config-env=*|--super-prefix=*|-*)
+          i=$((i + 1)) ;;
+        *) break ;;
+      esac
+    done
   done
-  printf '%s' "$command"
+  [ ${#output[@]} -gt 0 ] || return 0
+  printf '%s ' "${output[@]}" | sed 's/ $//'
 }
 GIT_COMMANDS=""
 IMPLICIT_GIT=0
+EMBEDDED_SHELL=0
+REPEATED_C=0
 SAFE_CD_CHAIN=0
 # Only this single, guarded cd form can omit the starting cwd from policy
 # checks. Other control flow may run Git in the starting directory.
@@ -244,8 +300,19 @@ if [[ "$COMMAND" =~ ^[[:space:]]*cd[[:space:]]+[^\;\&\|]+[[:space:]]*\&\&[[:spac
   SAFE_CD_CHAIN=1
 fi
 while IFS= read -r segment; do
+  if [ "$segment" = "__GIT_SAFE_EMBEDDED__" ]; then
+    EMBEDDED_SHELL=1
+    continue
+  fi
   normalized=$(strip_git_globals "$segment")
+  if is_embedded_shell_segment "$segment"; then
+    EMBEDDED_SHELL=1
+  fi
   if is_git_command_segment "$normalized"; then
+    c_in_segment=$(printf '%s\n' "$segment" | grep -oE '(^|[[:space:]])-C([[:space:]]|[^[:space:]])' | wc -l | tr -d '[:space:]' || true)
+    if [ "$c_in_segment" -gt 1 ]; then
+      REPEATED_C=1
+    fi
     # A Git invocation without its own -C may still run in the payload cwd.
     # The only supported exception is one leading `cd target && git ...`, whose
     # Git call cannot run when cd fails.  All other shell control flow is
@@ -264,12 +331,12 @@ $normalized"
 done < <(command_segments)
 
 # A quoted shell script or command substitution is executable, even though the
-# outer quote parser treats ordinary prose as data.  Check the raw command too
-# for these forms.  Its target cannot be inferred safely from the outer shell,
-# so an allowlist in a different repository must not authorize it.
-EMBEDDED_SHELL=0
-if printf '%s\n' "$COMMAND" | grep -qE '(^|[[:space:];&|])(/[^[:space:];&|]*/)?(bash|sh|zsh)[[:space:]]+-[[:alpha:]]*c[[:space:]]|[$][(]|[`]'; then
-  EMBEDDED_SHELL=1
+# outer quote parser treats ordinary prose as data.  Its target cannot be
+# inferred safely from the outer shell.
+if [ "$EMBEDDED_SHELL" = "1" ]; then
+  embedded_text=$(printf '%s' "$COMMAND" | tr '\047\042\140\044\050\051' '      ')
+  GIT_COMMANDS="$GIT_COMMANDS
+$(strip_git_globals "$embedded_text")"
   GIT_COMMANDS="$GIT_COMMANDS
 $COMMAND"
 fi
@@ -304,6 +371,7 @@ target_path() {
 TARGET_DIRS=()
 UNRESOLVED_TARGET=0
 [ "$EMBEDDED_SHELL" = "0" ] || UNRESOLVED_TARGET=1
+[ "$REPEATED_C" = "0" ] || UNRESOLVED_TARGET=1
 C_OPTIONS=0
 CD_OPTIONS=0
 while IFS= read -r raw; do
