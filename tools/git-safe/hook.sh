@@ -140,13 +140,13 @@ command_segments() {
 
         if (c == "'\''" && !dq) {
           sq = !sq
-          out = out " "
+          out = out (sq ? "Q" : " ")
           continue
         }
 
         if (c == "\"" && !sq) {
           dq = !dq
-          out = out " "
+          out = out (dq ? "Q" : " ")
           continue
         }
 
@@ -176,7 +176,7 @@ command_segments() {
       print out
       maybe_heredoc($0)
     }
-  ' <<< "${MATCH_COMMAND:-$COMMAND}"
+  ' <<< "$COMMAND"
 }
 
 is_git_binary_token() {
@@ -217,9 +217,10 @@ is_git_command_segment() {
 }
 
 # Git accepts global options between `git` and the subcommand.  Match against
-# the command after removing those options, or `git -C dir reset --hard` escapes
-# every `git reset` rule below.  Keep COMMAND unchanged for logging and target
-# directory resolution.
+# each quote-scrubbed executable segment after removing those options, or
+# `git -C dir reset --hard` escapes every `git reset` rule below.  Never rewrite
+# the raw shell command before quote parsing: that can consume a closing quote
+# in harmless prose and hide a later real Git command.
 strip_git_globals() {
   local command="$1" previous=""
   while [ "$command" != "$previous" ]; do
@@ -227,22 +228,37 @@ strip_git_globals() {
     command=$(printf '%s' "$command" | sed -E "
       s/(^|[^[:alnum:]_.-])git[[:space:]]+(-C|-c|--git-dir|--work-tree|--namespace|--config-env|--super-prefix)[[:space:]]+(\"[^\"]*\"|'[^']*'|[^[:space:]]+)/\\1git/g
       s/(^|[^[:alnum:]_.-])git[[:space:]]+-C[^[:space:]]+/\1git/g
+      s/(^|[^[:alnum:]_.-])git[[:space:]]+-c[^[:space:]]+/\1git/g
       s/(^|[^[:alnum:]_.-])git[[:space:]]+(--git-dir|--work-tree|--namespace|--exec-path|--config-env|--super-prefix)=[^[:space:]]+/\1git/g
       s/(^|[^[:alnum:]_.-])git[[:space:]]+(-p|-P|--paginate|--no-pager|--bare|--no-replace-objects|--literal-pathspecs|--glob-pathspecs|--noglob-pathspecs|--icase-pathspecs|--no-optional-locks)([[:space:]])/\1git\3/g
     ")
   done
   printf '%s' "$command"
 }
-MATCH_COMMAND=$(strip_git_globals "$COMMAND")
-
 GIT_COMMANDS=""
+IMPLICIT_GIT=0
+SAFE_CD_CHAIN=0
+# Only this single, guarded cd form can omit the starting cwd from policy
+# checks. Other control flow may run Git in the starting directory.
+if [[ "$COMMAND" =~ ^[[:space:]]*cd[[:space:]]+[^\;\&\|]+[[:space:]]*\&\&[[:space:]]*git[[:space:]]+[^\;\&\|]*$ ]]; then
+  SAFE_CD_CHAIN=1
+fi
 while IFS= read -r segment; do
-  if is_git_command_segment "$segment"; then
+  normalized=$(strip_git_globals "$segment")
+  if is_git_command_segment "$normalized"; then
+    # A Git invocation without its own -C may still run in the payload cwd.
+    # The only supported exception is one leading `cd target && git ...`, whose
+    # Git call cannot run when cd fails.  All other shell control flow is
+    # conservatively checked against the payload cwd as well.
+    if ! [[ "$segment" =~ (^|[[:space:]])-C([[:space:]]|[^[:space:]]) ]] &&
+       [ "$SAFE_CD_CHAIN" = "0" ]; then
+      IMPLICIT_GIT=1
+    fi
     if [ -z "$GIT_COMMANDS" ]; then
-      GIT_COMMANDS="$segment"
+      GIT_COMMANDS="$normalized"
     else
       GIT_COMMANDS="$GIT_COMMANDS
-$segment"
+$normalized"
     fi
   fi
 done < <(command_segments)
@@ -277,6 +293,7 @@ target_path() {
 TARGET_DIRS=()
 UNRESOLVED_TARGET=0
 C_OPTIONS=0
+CD_OPTIONS=0
 while IFS= read -r raw; do
   [ -n "$raw" ] || continue
   C_OPTIONS=$((C_OPTIONS + 1))
@@ -284,20 +301,25 @@ while IFS= read -r raw; do
   target=$(target_path "$raw")
   if [ -n "$target" ]; then TARGET_DIRS+=("$target"); else UNRESOLVED_TARGET=1; fi
 done < <(printf '%s\n' "$COMMAND" | grep -oE "(^|[[:space:]])-C[[:space:]]+('[^']*'|\"[^\"]*\"|[^[:space:];&|]+)" || true)
-# Repeated -C is relative to the preceding -C.  Do not borrow a policy from
-# the session or any intermediate directory when that final path is ambiguous.
-[ "$C_OPTIONS" -le 1 ] || UNRESOLVED_TARGET=1
-if printf '%s\n' "$COMMAND" | grep -qE '(^|[^[:alnum:]_.-])git[[:space:]]+-C[^[:space:]]|(^|[[:space:]])--(git-dir|work-tree)(=|[[:space:]])'; then
+# Attached -C and alternate git-dir/work-tree forms are not resolved here.
+if printf '%s\n' "$COMMAND" | grep -qE '(^|[[:space:]])-C[^[:space:]]|(^|[[:space:]])--(git-dir|work-tree)(=|[[:space:]])'; then
   # Attached -C and alternate git-dir/work-tree forms are not resolved here.
   UNRESOLVED_TARGET=1
 fi
 while IFS= read -r raw; do
   [ -n "$raw" ] || continue
+  CD_OPTIONS=$((CD_OPTIONS + 1))
   raw=$(printf '%s' "$raw" | sed -E 's/.*cd[[:space:]]+//')
   target=$(target_path "$raw")
   if [ -n "$target" ]; then TARGET_DIRS+=("$target"); else UNRESOLVED_TARGET=1; fi
 done < <(printf '%s\n' "$COMMAND" | grep -oE "(^|[;&|][[:space:]]*)cd[[:space:]]+('[^']*'|\"[^\"]*\"|[^[:space:];&|]+)" || true)
+# Relative -C after cd, and repeated cd, need full shell state tracking to
+# resolve precisely. Do not borrow any one of their policies.
+if [ "$CD_OPTIONS" -gt 1 ] || { [ "$CD_OPTIONS" -gt 0 ] && [ "$C_OPTIONS" -gt 0 ]; }; then
+  UNRESOLVED_TARGET=1
+fi
 [ ${#TARGET_DIRS[@]} -gt 0 ] || TARGET_DIRS=("$PAYLOAD_CWD")
+[ "$IMPLICIT_GIT" = "0" ] || TARGET_DIRS+=("$PAYLOAD_CWD")
 
 CONFIG_FILES=()
 if [ -n "${GIT_SAFE_CONFIG:-}" ]; then

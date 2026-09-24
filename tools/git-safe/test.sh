@@ -355,10 +355,11 @@ assert_blocked "real destructive git command after harmless mention still blocks
 # target repo, not from the hook's process cwd or the session's initial repo.
 echo ""
 echo "Global options and target repository policy:"
-mkdir -p "$TMPDIR/session" "$TMPDIR/target" "$TMPDIR/target with spaces"
+mkdir -p "$TMPDIR/session" "$TMPDIR/target" "$TMPDIR/target with spaces" "$TMPDIR/denied"
 git init -q "$TMPDIR/session"
 git init -q "$TMPDIR/target"
 git init -q "$TMPDIR/target with spaces"
+git init -q "$TMPDIR/denied"
 echo "allow: reset --hard" > "$TMPDIR/session/.git-safe"
 
 assert_blocked "git -C cannot bypass reset guard or borrow session allowlist" \
@@ -379,12 +380,38 @@ assert_blocked "cd target cannot borrow session allowlist" \
   "$(hook_input_at "cd $TMPDIR/target && git reset --hard" "$TMPDIR/session")"
 assert_blocked "quoted -C target with spaces is enforced" \
   "$(hook_input_at "git -C '$TMPDIR/target with spaces' reset --hard" "$TMPDIR/session")"
+assert_blocked "global option text in a quote cannot hide a later reset" \
+  "$(hook_input_at 'echo "git -c x"; git reset --hard' "$TMPDIR/denied")"
+assert_blocked "attached -C text in a quote cannot hide a later reset" \
+  "$(hook_input_at 'echo "git -Cfoo"; git reset --hard' "$TMPDIR/denied")"
+assert_blocked "attached -C after another global option cannot borrow session policy" \
+  "$(hook_input_at "git --no-pager -C$TMPDIR/target reset --hard" "$TMPDIR/session")"
+assert_blocked "attached -c cannot hide reset" \
+  "$(hook_input_at 'git -ccolor.ui=false reset --hard' "$TMPDIR/denied")"
 
 echo "allow: reset --hard" > "$TMPDIR/target/.git-safe"
 assert_allowed "target's own allowlist permits git -C reset" \
   "$(hook_input_at "git -C $TMPDIR/target reset --hard" "$TMPDIR/session")"
 assert_allowed "target's own allowlist permits cd then reset" \
   "$(hook_input_at "cd $TMPDIR/target && git reset --hard" "$TMPDIR/session")"
+assert_blocked "later cd cannot authorize an earlier reset" \
+  "$(hook_input_at "git reset --hard; cd $TMPDIR/target" "$TMPDIR/denied")"
+assert_blocked "echo -C cannot authorize a reset" \
+  "$(hook_input_at "echo -C $TMPDIR/target; git reset --hard" "$TMPDIR/denied")"
+assert_blocked "safe targeted Git command cannot authorize later implicit reset" \
+  "$(hook_input_at "git -C $TMPDIR/target status; git reset --hard" "$TMPDIR/denied")"
+assert_blocked "failed cd fallback cannot borrow target policy" \
+  "$(hook_input_at "cd $TMPDIR/target || git reset --hard" "$TMPDIR/denied")"
+assert_allowed "separate authorized -C commands are not a repeated -C chain" \
+  "$(hook_input_at "git -C $TMPDIR/target reset --hard; git -C $TMPDIR/target reset --hard" "$TMPDIR/denied")"
+mkdir -p "$TMPDIR/session/child" "$TMPDIR/target/child"
+git init -q "$TMPDIR/session/child"
+git init -q "$TMPDIR/target/child"
+echo "allow: reset --hard" > "$TMPDIR/session/child/.git-safe"
+assert_blocked "relative -C after cd cannot borrow the wrong child policy" \
+  "$(hook_input_at "cd $TMPDIR/target && git -C child reset --hard" "$TMPDIR/session")"
+assert_blocked "second relative cd cannot borrow the wrong child policy" \
+  "$(hook_input_at "cd $TMPDIR/target && cd child && git reset --hard" "$TMPDIR/session")"
 assert_allowed "safe git -C status remains allowed" \
   "$(hook_input_at "git -C $TMPDIR/target status" "$TMPDIR/session")"
 
