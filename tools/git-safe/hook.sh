@@ -263,6 +263,17 @@ $normalized"
   fi
 done < <(command_segments)
 
+# A quoted shell script or command substitution is executable, even though the
+# outer quote parser treats ordinary prose as data.  Check the raw command too
+# for these forms.  Its target cannot be inferred safely from the outer shell,
+# so an allowlist in a different repository must not authorize it.
+EMBEDDED_SHELL=0
+if printf '%s\n' "$COMMAND" | grep -qE '(^|[[:space:];&|])(/[^[:space:];&|]*/)?(bash|sh|zsh)[[:space:]]+-[[:alpha:]]*c[[:space:]]|[$][(]|[`]'; then
+  EMBEDDED_SHELL=1
+  GIT_COMMANDS="$GIT_COMMANDS
+$COMMAND"
+fi
+
 matches_git_command() {
   printf '%s\n' "$GIT_COMMANDS" | grep -qE "$1" 2>/dev/null
 }
@@ -292,6 +303,7 @@ target_path() {
 
 TARGET_DIRS=()
 UNRESOLVED_TARGET=0
+[ "$EMBEDDED_SHELL" = "0" ] || UNRESOLVED_TARGET=1
 C_OPTIONS=0
 CD_OPTIONS=0
 while IFS= read -r raw; do

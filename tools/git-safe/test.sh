@@ -350,6 +350,16 @@ assert_allowed "git commit -F heredoc body can mention git reset --hard" \
   "$(hook_input "$HEREDOC_COMMIT_MESSAGE")"
 assert_blocked "real destructive git command after harmless mention still blocks" \
   "$(hook_input 'echo "git reset --hard"; git reset --hard')"
+assert_blocked "bash -c executes a quoted destructive command" \
+  "$(hook_input 'bash -c "git reset --hard"')"
+assert_blocked "sh -c executes a single-quoted destructive command" \
+  "$(hook_input "sh -c 'git reset --hard'")"
+assert_blocked "command substitution executes inside a double quote" \
+  "$(hook_input 'echo "$(git reset --hard)"')"
+assert_blocked "backtick substitution executes a destructive command" \
+  "$(hook_input 'echo `git reset --hard`')"
+assert_blocked "commit message substitution executes before commit" \
+  "$(hook_input 'git commit -m "$(git reset --hard)"')"
 
 # Global Git options must not hide the subcommand.  Resolve .git-safe from the
 # target repo, not from the hook's process cwd or the session's initial repo.
