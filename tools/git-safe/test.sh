@@ -571,6 +571,47 @@ git init -q "$TMPDIR/target with spaces"
 git init -q "$TMPDIR/denied"
 echo "allow: reset --hard" > "$TMPDIR/session/.git-safe"
 
+assert_blocked "env -S cannot borrow session reset allowlist" \
+  "$(hook_input_at "env -S 'git reset --hard'" "$TMPDIR/session")"
+assert_blocked "env --split-string cannot borrow session reset allowlist" \
+  "$(hook_input_at "env --split-string='git reset --hard'" "$TMPDIR/session")"
+assert_blocked "attached env -S Git head cannot hide global-option reset" \
+  "$(hook_input_at "env -Sgit --no-advice reset --hard" "$TMPDIR/session")"
+assert_blocked "attached env split-string Git head cannot hide global-option reset" \
+  "$(hook_input_at "env --split-string=git --no-advice reset --hard" "$TMPDIR/session")"
+assert_blocked "inline git-dir and worktree cannot borrow session allowlist" \
+  "$(hook_input_at "GIT_DIR=$TMPDIR/target/.git GIT_WORK_TREE=$TMPDIR/target git reset --hard" "$TMPDIR/session")"
+assert_blocked "env assignments cannot borrow session allowlist" \
+  "$(hook_input_at "env GIT_DIR=$TMPDIR/target/.git GIT_WORK_TREE=$TMPDIR/target git reset --hard" "$TMPDIR/session")"
+assert_blocked "inline worktree cannot borrow session allowlist" \
+  "$(hook_input_at "GIT_WORK_TREE=$TMPDIR/target git reset --hard" "$TMPDIR/session")"
+assert_blocked "exported worktree cannot borrow session allowlist" \
+  "$(hook_input_at "export GIT_WORK_TREE=$TMPDIR/target; git reset --hard" "$TMPDIR/session")"
+assert_blocked "prior worktree assignment cannot borrow session allowlist" \
+  "$(hook_input_at "GIT_WORK_TREE=$TMPDIR/target; export GIT_WORK_TREE; git reset --hard" "$TMPDIR/session")"
+assert_blocked "builtin export cannot redirect later Git target" \
+  "$(hook_input_at "builtin export GIT_DIR=$TMPDIR/target/.git; git reset --hard" "$TMPDIR/session")"
+assert_blocked "command export cannot redirect later Git target" \
+  "$(hook_input_at "command export GIT_DIR=$TMPDIR/target/.git; git reset --hard" "$TMPDIR/session")"
+assert_blocked "readonly cannot redirect later Git target" \
+  "$(hook_input_at "readonly GIT_DIR=$TMPDIR/target/.git; git reset --hard" "$TMPDIR/session")"
+assert_allowed "printed worktree text does not alter later Git target" \
+  "$(hook_input_at "echo GIT_WORK_TREE=$TMPDIR/target; git reset --hard" "$TMPDIR/session")"
+assert_blocked "nice cannot hide targeted hard reset" \
+  "$(hook_input_at "nice -n 10 git -C $TMPDIR/target reset --hard" "$TMPDIR/session")"
+assert_blocked "timeout cannot hide targeted hard reset" \
+  "$(hook_input_at "timeout 5 git -C $TMPDIR/target reset --hard" "$TMPDIR/session")"
+assert_blocked "sudo chdir cannot borrow session allowlist" \
+  "$(hook_input_at "sudo -D $TMPDIR/target git reset --hard" "$TMPDIR/session")"
+assert_blocked "sudo timeout cannot hide targeted hard reset" \
+  "$(hook_input_at "sudo -T 5 git -C $TMPDIR/target reset --hard" "$TMPDIR/session")"
+assert_blocked "env chdir cannot borrow session allowlist" \
+  "$(hook_input_at "env -C $TMPDIR/target git reset --hard" "$TMPDIR/session")"
+assert_blocked "caffeinate cannot hide targeted hard reset" \
+  "$(hook_input_at "caffeinate -i git -C $TMPDIR/target reset --hard" "$TMPDIR/session")"
+assert_blocked "stdbuf cannot hide targeted hard reset" \
+  "$(hook_input_at "stdbuf -oL git -C $TMPDIR/target reset --hard" "$TMPDIR/session")"
+
 assert_blocked "git -C cannot bypass reset guard or borrow session allowlist" \
   "$(hook_input_at "git -C $TMPDIR/target reset --hard" "$TMPDIR/session")"
 GIT_WORK_TREE="$TMPDIR/session" assert_blocked "inherited worktree cannot borrow session allowlist" \

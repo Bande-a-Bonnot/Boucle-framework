@@ -62,13 +62,19 @@ GIT_SAFE_CONFIG=path  # Custom config file location
 
 git-safe is a [PreToolUse hook](https://docs.anthropic.com/en/docs/claude-code/hooks) that inspects Bash commands before execution. It normalizes Git global options such as `-C` before matching destructive subcommands, then blocks with a human-readable reason on `stderr` plus exit code `2`.
 
-Executable shell strings (`eval`, shell `-c`, and command substitutions) are
+Executable shell strings (`eval`, shell `-c`, `env -S`, and command substitutions) are
 checked too, including substitutions in unquoted here-doc bodies. Literal
 examples in single-quoted arguments and quoted here-doc bodies remain inert.
 Repeated `-C` targets are treated as ambiguous and require an
 explicit `GIT_SAFE_CONFIG` override for a guarded operation.
-Inherited `GIT_DIR`, `GIT_WORK_TREE`, or `GIT_OBJECT_DIRECTORY` likewise make
-the target ambiguous, so repository-local allowlists are not applied.
+Inherited, inline, or earlier exported `GIT_DIR`, `GIT_WORK_TREE`, or
+`GIT_OBJECT_DIRECTORY` make the target ambiguous, so repository-local
+allowlists are not applied. The same applies to wrapper options that change
+the working directory, such as `sudo -D` and `env -C`. Options to `nice`,
+`timeout`, `caffeinate`, and `stdbuf` are skipped before identifying the Git
+command they run. Split strings passed to `env -S` are treated conservatively:
+a literal mention of a destructive Git command inside such a string may be
+blocked even when its intended executable only prints that text.
 
 Safe operations (`git status`, `git commit`, `git push`, `git branch -d`, etc.) pass through without interference.
 

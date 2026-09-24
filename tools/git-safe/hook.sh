@@ -353,6 +353,40 @@ is_assignment_token() {
   [[ "$1" =~ ^[A-Za-z_][A-Za-z0-9_]*= ]]
 }
 
+# A prior shell assignment or export can redirect a later Git command in the
+# same Bash tool call. Text printed by a command such as echo is not an export.
+segment_sets_git_env() {
+  local words=() token i=0
+  read -r -a words <<< "$1"
+  [ ${#words[@]} -gt 0 ] || return 1
+  while [ $i -lt ${#words[@]} ]; do
+    case "${words[$i]}" in
+      builtin) i=$((i + 1)) ;;
+      command)
+        i=$((i + 1))
+        while [ $i -lt ${#words[@]} ]; do
+          case "${words[$i]}" in
+            -p|--) i=$((i + 1)) ;;
+            *) break ;;
+          esac
+        done
+        ;;
+      *) break ;;
+    esac
+  done
+  [ $i -lt ${#words[@]} ] || return 1
+  case "${words[$i]}" in
+    export|declare|typeset|readonly|local) ;;
+    *) is_assignment_token "${words[$i]}" || return 1 ;;
+  esac
+  for token in "${words[@]}"; do
+    case "$token" in
+      GIT_DIR=*|GIT_WORK_TREE=*|GIT_OBJECT_DIRECTORY=*) return 0 ;;
+    esac
+  done
+  return 1
+}
+
 is_git_command_segment() {
   local segment="$1"
   local words=()
@@ -376,8 +410,15 @@ is_git_command_segment() {
         while [ $i -lt ${#words[@]} ]; do
           token="${words[$i]}"
           case "$token" in
-            -u|--unset|-C|--chdir|-S|--split-string) i=$((i + 2)) ;;
-            -i|--ignore-environment|-0|--null|--|-u?*|--unset=*|-C?*|--chdir=*)
+            -S|--split-string|-S?*|--split-string=*)
+              # env -S splits a string into an executable and its arguments.
+              # The quoted string is opaque to the outer segment scanner.
+              EMBEDDED_SHELL=1
+              i=$((i + 2)) ;;
+            -C|--chdir) WRAPPER_CWD=1; i=$((i + 2)) ;;
+            -C?*|--chdir=*) WRAPPER_CWD=1; i=$((i + 1)) ;;
+            -u|--unset) i=$((i + 2)) ;;
+            -i|--ignore-environment|-0|--null|--|-u?*|--unset=*)
               i=$((i + 1)) ;;
             -*) i=$((i + 1)) ;;
             *) if is_assignment_token "$token"; then i=$((i + 1)); else break; fi ;;
@@ -399,7 +440,11 @@ is_git_command_segment() {
         while [ $i -lt ${#words[@]} ]; do
           token="${words[$i]}"
           case "$token" in
-            -u|--user|-g|--group|-h|--host|-p|--prompt|-C|--close-from|-r|--role|-t|--type)
+            -D|--chdir|-R|--chroot)
+              WRAPPER_CWD=1; i=$((i + 2)) ;;
+            -D?*|--chdir=*|-R?*|--chroot=*)
+              WRAPPER_CWD=1; i=$((i + 1)) ;;
+            -u|--user|-g|--group|-h|--host|-p|--prompt|-C|--close-from|-r|--role|-t|--type|-T|--command-timeout|-U|--other-user)
               i=$((i + 2)) ;;
             -u?*|--user=*|-g?*|--group=*|-n|-E|-H|-S|-b|-P|-A|--)
               i=$((i + 1)) ;;
@@ -412,7 +457,51 @@ is_git_command_segment() {
         i=$((i + 1))
         while [ $i -lt ${#words[@]} ]; do
           case "${words[$i]}" in
-            -p|--portability|--) i=$((i + 1)) ;;
+            -o|--output|-f|--format) i=$((i + 2)) ;;
+            -p|--portability|--|-l|-v|-a) i=$((i + 1)) ;;
+            *) break ;;
+          esac
+        done
+        ;;
+      nice)
+        i=$((i + 1))
+        while [ $i -lt ${#words[@]} ]; do
+          case "${words[$i]}" in
+            -n|--adjustment) i=$((i + 2)) ;;
+            -n?*|--adjustment=*|-[0-9]*) i=$((i + 1)) ;;
+            *) break ;;
+          esac
+        done
+        ;;
+      timeout)
+        i=$((i + 1))
+        while [ $i -lt ${#words[@]} ]; do
+          case "${words[$i]}" in
+            -s|--signal|-k|--kill-after) i=$((i + 2)) ;;
+            -s?*|--signal=*|-k?*|--kill-after=*|--foreground|--preserve-status|--)
+              i=$((i + 1)) ;;
+            -*) i=$((i + 1)) ;;
+            *) break ;;
+          esac
+        done
+        i=$((i + 1)) # duration
+        ;;
+      caffeinate)
+        i=$((i + 1))
+        while [ $i -lt ${#words[@]} ]; do
+          case "${words[$i]}" in
+            -t|-w) i=$((i + 2)) ;;
+            -*) i=$((i + 1)) ;;
+            *) break ;;
+          esac
+        done
+        ;;
+      stdbuf)
+        i=$((i + 1))
+        while [ $i -lt ${#words[@]} ]; do
+          case "${words[$i]}" in
+            -i|-o|-e) i=$((i + 2)) ;;
+            -*) i=$((i + 1)) ;;
             *) break ;;
           esac
         done
@@ -489,6 +578,16 @@ strip_git_globals() {
   read -r -a words <<< "$command"
   while [ $i -lt ${#words[@]} ]; do
     token="${words[$i]}"
+    # env -S accepts the executable attached to its option. Expose a literal
+    # Git head here so its global options are normalized like a direct call.
+    case "$token" in
+      -S?*) candidate="${token#-S}" ;;
+      --split-string=*) candidate="${token#--split-string=}" ;;
+      *) candidate="" ;;
+    esac
+    if [ -n "$candidate" ] && is_git_binary_token "$candidate"; then
+      token="git"
+    fi
     output+=("$token")
     i=$((i + 1))
     if ! is_git_binary_token "$token"; then
@@ -512,6 +611,8 @@ GIT_COMMANDS=""
 IMPLICIT_GIT=0
 EMBEDDED_SHELL=0
 REPEATED_C=0
+INLINE_GIT_ENV=0
+WRAPPER_CWD=0
 SAFE_CD_CHAIN=0
 # Only this single, guarded cd form can omit the starting cwd from policy
 # checks. Other control flow may run Git in the starting directory.
@@ -524,10 +625,23 @@ while IFS= read -r segment; do
     continue
   fi
   normalized=$(strip_git_globals "$segment")
+  if segment_sets_git_env "$segment"; then
+    INLINE_GIT_ENV=1
+  fi
   if is_embedded_shell_segment "$segment"; then
     EMBEDDED_SHELL=1
   fi
   if is_git_command_segment "$normalized"; then
+    # Attached env split-string heads have already been normalized to Git;
+    # retain their opaque target context instead of borrowing the cwd policy.
+    if [[ "$segment" =~ (^|[[:space:]])env[[:space:]]+(-S|--split-string) ]]; then
+      EMBEDDED_SHELL=1
+    fi
+    # Inline assignments affect the child Git process, even though they do
+    # not appear in this hook's own environment. No local allowlist is safe.
+    if [[ "$segment" =~ (^|[[:space:]])GIT_(DIR|WORK_TREE|OBJECT_DIRECTORY)= ]]; then
+      INLINE_GIT_ENV=1
+    fi
     c_in_segment=$(printf '%s\n' "$segment" | grep -oE '(^|[[:space:]])-C([[:space:]]|[^[:space:]])' | wc -l | tr -d '[:space:]' || true)
     if [ "$c_in_segment" -gt 1 ]; then
       REPEATED_C=1
@@ -593,6 +707,8 @@ TARGET_DIRS=()
 UNRESOLVED_TARGET=0
 [ "$EMBEDDED_SHELL" = "0" ] || UNRESOLVED_TARGET=1
 [ "$REPEATED_C" = "0" ] || UNRESOLVED_TARGET=1
+[ "$INLINE_GIT_ENV" = "0" ] || UNRESOLVED_TARGET=1
+[ "$WRAPPER_CWD" = "0" ] || UNRESOLVED_TARGET=1
 # Git repository environment can redirect the actual operation independently
 # of -C. Without modelling that environment, no local allowlist is trusted.
 if [ -n "${GIT_DIR:-}" ] || [ -n "${GIT_WORK_TREE:-}" ] ||
