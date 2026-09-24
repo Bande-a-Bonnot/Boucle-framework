@@ -65,6 +65,10 @@ git-safe is a [PreToolUse hook](https://docs.anthropic.com/en/docs/claude-code/h
 Executable shell strings (`eval`, shell `-c`, `env -S`, and command substitutions) are
 checked too, including substitutions in unquoted here-doc bodies. Literal
 examples in single-quoted arguments and quoted here-doc bodies remain inert.
+Shell quotes around literal executable names, Git options, and Git environment
+assignments are removed for inspection. If an executable is selected by an
+expansion, destructive Git-shaped arguments are checked with an unresolved
+target; a shell-scanner failure denies the tool call.
 Repeated `-C` targets are treated as ambiguous and require an
 explicit `GIT_SAFE_CONFIG` override for a guarded operation.
 Inherited, inline, or earlier exported `GIT_DIR`, `GIT_WORK_TREE`, or

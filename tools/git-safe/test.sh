@@ -270,6 +270,12 @@ echo "Allowlist config:"
 TMPDIR=$(mktemp -d)
 trap "rm -rf $TMPDIR" EXIT
 
+mkdir -p "$TMPDIR/fail-awk"
+printf '#!/bin/sh\nexit 1\n' > "$TMPDIR/fail-awk/awk"
+chmod +x "$TMPDIR/fail-awk/awk"
+PATH="$TMPDIR/fail-awk:$PATH" assert_blocked "shell scanner failure denies before execution" \
+  "$(hook_input "git status")"
+
 echo "allow: reset --hard" > "$TMPDIR/.git-safe"
 echo "allow: push --force" >> "$TMPDIR/.git-safe"
 
@@ -585,6 +591,66 @@ assert_blocked "inline git-dir and worktree cannot borrow session allowlist" \
   "$(hook_input_at "GIT_DIR=$TMPDIR/target/.git GIT_WORK_TREE=$TMPDIR/target git reset --hard" "$TMPDIR/session")"
 assert_blocked "env assignments cannot borrow session allowlist" \
   "$(hook_input_at "env GIT_DIR=$TMPDIR/target/.git GIT_WORK_TREE=$TMPDIR/target git reset --hard" "$TMPDIR/session")"
+assert_blocked "quoted export git-dir cannot borrow session reset allowlist" \
+  "$(hook_input_at "export 'GIT_DIR=$TMPDIR/target/.git'; git reset --hard" "$TMPDIR/session")"
+assert_blocked "quoted env git-dir cannot borrow session reset allowlist" \
+  "$(hook_input_at "env 'GIT_DIR=$TMPDIR/target/.git' git reset --hard" "$TMPDIR/session")"
+assert_blocked "quoted env Git executable cannot hide hard reset" \
+  "$(hook_input_at "env 'git' reset --hard" "$TMPDIR/denied")"
+assert_blocked "double-quoted export git-dir cannot borrow session reset allowlist" \
+  "$(hook_input_at "export \"GIT_DIR=$TMPDIR/target/.git\"; git reset --hard" "$TMPDIR/session")"
+assert_blocked "double-quoted env git-dir cannot borrow session reset allowlist" \
+  "$(hook_input_at "env \"GIT_DIR=$TMPDIR/target/.git\" git reset --hard" "$TMPDIR/session")"
+assert_blocked "double-quoted env Git executable cannot hide hard reset" \
+  "$(hook_input_at 'env "git" reset --hard' "$TMPDIR/denied")"
+assert_blocked "direct quoted Git executable cannot hide hard reset" \
+  "$(hook_input_at "'git' reset --hard" "$TMPDIR/denied")"
+assert_blocked "command env quoted Git executable cannot hide hard reset" \
+  "$(hook_input_at "command env 'git' reset --hard" "$TMPDIR/denied")"
+assert_blocked "builtin export quoted git-dir redirects later target" \
+  "$(hook_input_at "builtin export 'GIT_DIR=$TMPDIR/target/.git'; git reset --hard" "$TMPDIR/session")"
+assert_blocked "quoted worktree assignment cannot borrow session allowlist" \
+  "$(hook_input_at "env 'GIT_WORK_TREE=$TMPDIR/target' git reset --hard" "$TMPDIR/session")"
+assert_blocked "quoted object directory cannot borrow session allowlist" \
+  "$(hook_input_at "env 'GIT_OBJECT_DIRECTORY=$TMPDIR/target/.git/objects' git reset --hard" "$TMPDIR/session")"
+assert_allowed "printed quoted git-dir text does not change target" \
+  "$(hook_input_at "echo 'GIT_DIR=$TMPDIR/target/.git'; git reset --hard" "$TMPDIR/session")"
+assert_allowed "quoted env Git status remains harmless" \
+  "$(hook_input_at "env 'git' status" "$TMPDIR/denied")"
+assert_blocked "quote-concatenated Git executable cannot hide hard reset" \
+  "$(hook_input_at "g'it' reset --hard" "$TMPDIR/denied")"
+assert_blocked "leading quoted Git fragment cannot hide hard reset" \
+  "$(hook_input_at "'g'it reset --hard" "$TMPDIR/denied")"
+assert_blocked "empty quote before Git executable cannot hide hard reset" \
+  "$(hook_input_at "''git reset --hard" "$TMPDIR/denied")"
+assert_blocked "empty quote inside Git executable cannot hide hard reset" \
+  "$(hook_input_at "g''it reset --hard" "$TMPDIR/denied")"
+assert_blocked "empty double quote inside Git executable cannot hide hard reset" \
+  "$(hook_input_at 'gi""t reset --hard' "$TMPDIR/denied")"
+assert_blocked "quoted hard-reset flag cannot hide destructive option" \
+  "$(hook_input_at "git reset '--hard'" "$TMPDIR/denied")"
+assert_blocked "quoted subcommand and flag cannot hide hard reset" \
+  "$(hook_input_at "git 'reset' '--hard'" "$TMPDIR/denied")"
+assert_blocked "quoted force-push flag cannot hide destructive option" \
+  "$(hook_input_at "git push '--force' origin feature" "$TMPDIR/denied")"
+assert_blocked "quoted clean flag cannot hide destructive option" \
+  "$(hook_input_at "git clean '-fd'" "$TMPDIR/denied")"
+assert_blocked "quoted no-verify flag cannot hide hook bypass" \
+  "$(hook_input_at "git commit '--no-verify' -m message" "$TMPDIR/denied")"
+assert_blocked "env quote-concatenated Git executable cannot hide hard reset" \
+  "$(hook_input_at "env g'it' reset --hard" "$TMPDIR/denied")"
+assert_blocked "runtime-selected Git executable cannot hide hard reset" \
+  "$(hook_input_at 'env "$GIT_BIN" reset --hard' "$TMPDIR/denied")"
+assert_blocked "direct runtime-selected Git executable cannot hide hard reset" \
+  "$(hook_input_at '"$GIT_BIN" reset --hard' "$TMPDIR/denied")"
+assert_blocked "quoted git-dir with spaces cannot borrow session allowlist" \
+  "$(hook_input_at "env 'GIT_DIR=$TMPDIR/target with spaces/.git' git reset --hard" "$TMPDIR/session")"
+assert_blocked "command export quoted git-dir redirects later target" \
+  "$(hook_input_at "command export 'GIT_DIR=$TMPDIR/target/.git'; git reset --hard" "$TMPDIR/session")"
+assert_allowed "printed quoted Git fragments do not execute" \
+  "$(hook_input_at "echo g'it' reset --hard" "$TMPDIR/denied")"
+assert_allowed "runtime-selected executable with safe arguments remains allowed" \
+  "$(hook_input_at 'env "$GIT_BIN" status' "$TMPDIR/denied")"
 assert_blocked "inline worktree cannot borrow session allowlist" \
   "$(hook_input_at "GIT_WORK_TREE=$TMPDIR/target git reset --hard" "$TMPDIR/session")"
 assert_blocked "exported worktree cannot borrow session allowlist" \

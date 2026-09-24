@@ -64,12 +64,28 @@ log() {
   fi
 }
 
-# Print command segments split on unquoted shell separators. Quoted arguments
-# become opaque Q tokens and here-doc bodies become spaces; substitutions in
-# unquoted bodies still emit an execution marker. A quoted -C directory still
-# occupies one argument when global options are normalized later.
+# Print command segments split on unquoted shell separators. Most quoted
+# arguments become opaque Q tokens; simple literal words, options, and Git
+# environment assignments remain visible after quote removal. Here-docs become
+# spaces, and substitutions in unquoted bodies still emit an execution marker.
+# A quoted -C directory still occupies one argument when options are normalized.
 command_segments() {
   awk '
+    function quoted_token(word, name) {
+      if (word == "") return ""
+      if (word ~ /^GIT_(DIR|WORK_TREE|OBJECT_DIRECTORY)=/) {
+        name = word
+        sub(/=.*/, "", name)
+        return name "=__GIT_SAFE_QUOTED__"
+      }
+      # Shell also removes quotes around simple options and word fragments.
+      # Keep shell syntax and whitespace opaque.
+      if (word ~ /^[-A-Za-z0-9_.\/=:+@]+$/) {
+        return word
+      }
+      return "Q"
+    }
+
     function reset_heredoc(delim, quoted) {
       heredoc = delim
       heredoc_quoted = quoted
@@ -276,7 +292,12 @@ command_segments() {
         n = substr($0, i + 1, 1)
 
         if (esc) {
-          out = out ((sq || dq) ? " " : c)
+          if (sq || dq) {
+            quote_text = quote_text "\\" c
+            out = out " "
+          } else {
+            out = out c
+          }
           esc = 0
           continue
         }
@@ -288,14 +309,28 @@ command_segments() {
         }
 
         if (c == "'\''" && !dq) {
-          sq = !sq
-          out = out (sq ? "Q" : " ")
+          if (sq) {
+            sq = 0
+            out = substr(out, 1, quote_start) quoted_token(quote_text)
+          } else {
+            sq = 1
+            quote_start = length(out)
+            quote_text = ""
+            out = out "Q"
+          }
           continue
         }
 
         if (c == "\"" && !sq) {
-          dq = !dq
-          out = out (dq ? "Q" : " ")
+          if (dq) {
+            dq = 0
+            out = substr(out, 1, quote_start) quoted_token(quote_text)
+          } else {
+            dq = 1
+            quote_start = length(out)
+            quote_text = ""
+            out = out "Q"
+          }
           continue
         }
 
@@ -306,6 +341,7 @@ command_segments() {
         }
 
         if (sq || dq) {
+          quote_text = quote_text c
           out = out " "
           continue
         }
@@ -394,6 +430,7 @@ is_git_command_segment() {
   local token=""
   local base=""
 
+  CURRENT_OPAQUE_EXEC=0
   read -r -a words <<< "$segment"
   [ ${#words[@]} -gt 0 ] || return 1
 
@@ -522,6 +559,14 @@ is_git_command_segment() {
   done
 
   [ $i -lt ${#words[@]} ] || return 1
+  if [ "${words[$i]}" = "Q" ]; then
+    # An expansion can select git at runtime. Match destructive Git arguments
+    # under an unresolved target instead of treating the call as non-Git.
+    OPAQUE_EXEC=1
+    CURRENT_OPAQUE_EXEC=1
+    GIT_CANDIDATE_INDEX=$i
+    return 0
+  fi
   is_git_binary_token "${words[$i]}"
 }
 
@@ -613,11 +658,18 @@ EMBEDDED_SHELL=0
 REPEATED_C=0
 INLINE_GIT_ENV=0
 WRAPPER_CWD=0
+OPAQUE_EXEC=0
+CURRENT_OPAQUE_EXEC=0
+GIT_CANDIDATE_INDEX=0
 SAFE_CD_CHAIN=0
 # Only this single, guarded cd form can omit the starting cwd from policy
 # checks. Other control flow may run Git in the starting directory.
 if [[ "$COMMAND" =~ ^[[:space:]]*cd[[:space:]]+[^\;\&\|]+[[:space:]]*\&\&[[:space:]]*git[[:space:]]+[^\;\&\|]*$ ]]; then
   SAFE_CD_CHAIN=1
+fi
+if ! segments=$(command_segments); then
+  printf '%s\n' 'git-safe: command inspection failed.' >&2
+  exit 2
 fi
 while IFS= read -r segment; do
   if [ "$segment" = "__GIT_SAFE_EMBEDDED__" ]; then
@@ -625,13 +677,18 @@ while IFS= read -r segment; do
     continue
   fi
   normalized=$(strip_git_globals "$segment")
-  if segment_sets_git_env "$segment"; then
+  if segment_sets_git_env "$normalized"; then
     INLINE_GIT_ENV=1
   fi
   if is_embedded_shell_segment "$segment"; then
     EMBEDDED_SHELL=1
   fi
   if is_git_command_segment "$normalized"; then
+    if [ "$CURRENT_OPAQUE_EXEC" = "1" ]; then
+      read -r -a candidate_words <<< "$normalized"
+      candidate_words[$GIT_CANDIDATE_INDEX]="git"
+      normalized="${candidate_words[*]}"
+    fi
     # Attached env split-string heads have already been normalized to Git;
     # retain their opaque target context instead of borrowing the cwd policy.
     if [[ "$segment" =~ (^|[[:space:]])env[[:space:]]+(-S|--split-string) ]]; then
@@ -639,7 +696,7 @@ while IFS= read -r segment; do
     fi
     # Inline assignments affect the child Git process, even though they do
     # not appear in this hook's own environment. No local allowlist is safe.
-    if [[ "$segment" =~ (^|[[:space:]])GIT_(DIR|WORK_TREE|OBJECT_DIRECTORY)= ]]; then
+    if [[ "$normalized" =~ (^|[[:space:]])GIT_(DIR|WORK_TREE|OBJECT_DIRECTORY)= ]]; then
       INLINE_GIT_ENV=1
     fi
     c_in_segment=$(printf '%s\n' "$segment" | grep -oE '(^|[[:space:]])-C([[:space:]]|[^[:space:]])' | wc -l | tr -d '[:space:]' || true)
@@ -661,7 +718,7 @@ while IFS= read -r segment; do
 $normalized"
     fi
   fi
-done < <(command_segments)
+done <<< "$segments"
 
 # A quoted shell script or command substitution is executable, even though the
 # outer quote parser treats ordinary prose as data.  Its target cannot be
@@ -709,6 +766,7 @@ UNRESOLVED_TARGET=0
 [ "$REPEATED_C" = "0" ] || UNRESOLVED_TARGET=1
 [ "$INLINE_GIT_ENV" = "0" ] || UNRESOLVED_TARGET=1
 [ "$WRAPPER_CWD" = "0" ] || UNRESOLVED_TARGET=1
+[ "$OPAQUE_EXEC" = "0" ] || UNRESOLVED_TARGET=1
 # Git repository environment can redirect the actual operation independently
 # of -C. Without modelling that environment, no local allowlist is trusted.
 if [ -n "${GIT_DIR:-}" ] || [ -n "${GIT_WORK_TREE:-}" ] ||
