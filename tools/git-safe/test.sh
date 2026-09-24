@@ -573,6 +573,8 @@ echo "allow: reset --hard" > "$TMPDIR/session/.git-safe"
 
 assert_blocked "env -S cannot borrow session reset allowlist" \
   "$(hook_input_at "env -S 'git reset --hard'" "$TMPDIR/session")"
+assert_blocked "attached quoted env -S cannot borrow session reset allowlist" \
+  "$(hook_input_at "env -S'git reset --hard'" "$TMPDIR/session")"
 assert_blocked "env --split-string cannot borrow session reset allowlist" \
   "$(hook_input_at "env --split-string='git reset --hard'" "$TMPDIR/session")"
 assert_blocked "attached env -S Git head cannot hide global-option reset" \
