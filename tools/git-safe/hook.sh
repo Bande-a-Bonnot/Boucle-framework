@@ -58,7 +58,6 @@ COMMAND=$(echo "$INPUT" | jq -r '.tool_input.command // empty')
 if [ -z "$COMMAND" ]; then
   exit 0
 fi
-
 log() {
   if [ "${GIT_SAFE_LOG:-0}" = "1" ]; then
     echo "[git-safe] $*" >&2
@@ -76,11 +75,111 @@ command_segments() {
       heredoc_quoted = quoted
     }
 
-    function maybe_heredoc(line,    i, c, n, q, delim, quoted) {
+    function comment_starts(line, pos,    i, c, sq, dq, esc, boundary) {
+      boundary = 1
+      for (i = 1; i < pos; i++) {
+        c = substr(line, i, 1)
+        if (sq) {
+          if (c == "'\''") sq = 0
+          boundary = 0
+          continue
+        }
+        if (esc) {
+          esc = 0
+          boundary = 0
+          continue
+        }
+        if (c == "\\") {
+          esc = 1
+          boundary = 0
+          continue
+        }
+        if (c == "'\''" && !dq) {
+          sq = 1
+          boundary = 0
+          continue
+        }
+        if (c == "\"") {
+          dq = !dq
+          boundary = 0
+          continue
+        }
+        if (dq) {
+          boundary = 0
+          continue
+        }
+        boundary = c ~ /[ \t;&|<>]/
+      }
+      return !sq && !dq && !esc && boundary
+    }
+
+    function line_continues(line,    i, c, sq, dq, esc) {
+      sq = 0
+      dq = 0
+      esc = 0
+      for (i = 1; i <= length(line); i++) {
+        c = substr(line, i, 1)
+        if (sq) {
+          if (c == "'\''") sq = 0
+          continue
+        }
+        if (esc) {
+          esc = 0
+          continue
+        }
+        if (c == "\\") {
+          esc = 1
+          continue
+        }
+        if (c == "\"" && !sq) {
+          dq = !dq
+          continue
+        }
+        if (c == "'\''" && !dq) {
+          sq = 1
+          continue
+        }
+        if (c == "#" && !dq && comment_starts(line, i)) {
+          return 0
+        }
+      }
+      return esc && !sq
+    }
+
+    function maybe_heredoc(line,    i, c, n, q, delim, quoted, sq, dq, esc) {
+      sq = 0
+      dq = 0
+      esc = 0
       for (i = 1; i <= length(line); i++) {
         c = substr(line, i, 1)
         n = substr(line, i + 1, 1)
+        if (esc) {
+          esc = 0
+          continue
+        }
+        if (c == "\\" && !sq) {
+          esc = 1
+          continue
+        }
+        if (c == "'\''" && !dq) {
+          sq = !sq
+          continue
+        }
+        if (c == "\"" && !sq) {
+          dq = !dq
+          continue
+        }
+        if (sq || dq) {
+          continue
+        }
+        if (c == "#" && comment_starts(line, i)) {
+          return
+        }
         if (c == "<" && n == "<") {
+          if (substr(line, i + 2, 1) == "<") {
+            i += 2
+            continue
+          }
           i += 2
           if (substr(line, i, 1) == "-") {
             i++
@@ -88,27 +187,37 @@ command_segments() {
           while (substr(line, i, 1) ~ /[ \t]/) {
             i++
           }
-          q = substr(line, i, 1)
+          q = ""
           delim = ""
           quoted = 0
-          if (q == "\"" || q == "'\''") {
-            quoted = 1
-            i++
-            while (i <= length(line) && substr(line, i, 1) != q) {
-              delim = delim substr(line, i, 1)
-              i++
-            }
-          } else {
-            if (q == "\\") {
+          esc = 0
+          while (i <= length(line)) {
+            c = substr(line, i, 1)
+            if (esc) {
+              delim = delim c
+              esc = 0
+            } else if (c == "\\" && q != "'\''") {
+              n = substr(line, i + 1, 1)
+              if (q == "\"" && n != "$" && n != "`" &&
+                  n != "\"" && n != "\\") {
+                delim = delim c
+              } else {
+                quoted = 1
+                esc = 1
+              }
+            } else if (q != "") {
+              if (c == q) q = ""; else delim = delim c
+            } else if (c == "\"" || c == "'\''") {
               quoted = 1
-              i++
+              q = c
+            } else if (c ~ /[ \t;&|<>]/) {
+              break
+            } else {
+              delim = delim c
             }
-            while (i <= length(line) && substr(line, i, 1) !~ /[ \t;&|]/) {
-              delim = delim substr(line, i, 1)
-              i++
-            }
+            i++
           }
-          if (delim != "") {
+          if (delim != "" && q == "" && !esc) {
             reset_heredoc(delim, quoted)
             return
           }
@@ -146,6 +255,16 @@ command_segments() {
         print ""
         next
       }
+
+      # Only Bash continuations in executable text join physical lines.
+      # A backslash in a comment, a single quote, or a here-doc body is data.
+      logical = $0
+      while (line_continues(logical)) {
+        logical = substr(logical, 1, length(logical) - 1)
+        if ((getline continuation) <= 0) break
+        logical = logical continuation
+      }
+      $0 = logical
 
       out = ""
       embedded = 0
@@ -191,6 +310,11 @@ command_segments() {
           continue
         }
 
+        # A shell comment starts at a word boundary; its text is not executed.
+        if (c == "#" && comment_starts($0, i)) {
+          break
+        }
+
         if (c == ";" || c == "|") {
           print out
           out = ""
@@ -234,21 +358,78 @@ is_git_command_segment() {
   local words=()
   local i=0
   local token=""
+  local base=""
 
   read -r -a words <<< "$segment"
   [ ${#words[@]} -gt 0 ] || return 1
 
   while [ $i -lt ${#words[@]} ]; do
     token="${words[$i]}"
-    if [ "$token" = "env" ] || [ "$token" = "command" ] || [ "$token" = "exec" ]; then
-      i=$((i + 1))
-      continue
-    fi
     if is_assignment_token "$token"; then
       i=$((i + 1))
       continue
     fi
-    break
+    base="${token##*/}"
+    case "$base" in
+      env)
+        i=$((i + 1))
+        while [ $i -lt ${#words[@]} ]; do
+          token="${words[$i]}"
+          case "$token" in
+            -u|--unset|-C|--chdir|-S|--split-string) i=$((i + 2)) ;;
+            -i|--ignore-environment|-0|--null|--|-u?*|--unset=*|-C?*|--chdir=*)
+              i=$((i + 1)) ;;
+            -*) i=$((i + 1)) ;;
+            *) if is_assignment_token "$token"; then i=$((i + 1)); else break; fi ;;
+          esac
+        done
+        ;;
+      command)
+        i=$((i + 1))
+        while [ $i -lt ${#words[@]} ]; do
+          case "${words[$i]}" in
+            -p|--) i=$((i + 1)) ;;
+            -v|-V) return 1 ;;
+            *) break ;;
+          esac
+        done
+        ;;
+      sudo)
+        i=$((i + 1))
+        while [ $i -lt ${#words[@]} ]; do
+          token="${words[$i]}"
+          case "$token" in
+            -u|--user|-g|--group|-h|--host|-p|--prompt|-C|--close-from|-r|--role|-t|--type)
+              i=$((i + 2)) ;;
+            -u?*|--user=*|-g?*|--group=*|-n|-E|-H|-S|-b|-P|-A|--)
+              i=$((i + 1)) ;;
+            -*) i=$((i + 1)) ;;
+            *) break ;;
+          esac
+        done
+        ;;
+      time)
+        i=$((i + 1))
+        while [ $i -lt ${#words[@]} ]; do
+          case "${words[$i]}" in
+            -p|--portability|--) i=$((i + 1)) ;;
+            *) break ;;
+          esac
+        done
+        ;;
+      exec)
+        i=$((i + 1))
+        while [ $i -lt ${#words[@]} ]; do
+          case "${words[$i]}" in
+            -a) i=$((i + 2)) ;;
+            -c|-l|--) i=$((i + 1)) ;;
+            *) break ;;
+          esac
+        done
+        ;;
+      nohup) i=$((i + 1)) ;;
+      *) break ;;
+    esac
   done
 
   [ $i -lt ${#words[@]} ] || return 1
@@ -282,6 +463,9 @@ is_embedded_shell_segment() {
     case "$token" in bash|sh|zsh|dash|ksh) ;; *) continue ;; esac
     for ((j = i + 1; j < ${#words[@]}; j++)); do
       option="${words[$j]}"
+      case "$option" in
+        -O|-o) j=$((j + 1)); continue ;;
+      esac
       if [[ "$option" =~ ^-[a-zA-Z]*c[a-zA-Z]*$ ]]; then
         return 0
       fi
@@ -409,6 +593,12 @@ TARGET_DIRS=()
 UNRESOLVED_TARGET=0
 [ "$EMBEDDED_SHELL" = "0" ] || UNRESOLVED_TARGET=1
 [ "$REPEATED_C" = "0" ] || UNRESOLVED_TARGET=1
+# Git repository environment can redirect the actual operation independently
+# of -C. Without modelling that environment, no local allowlist is trusted.
+if [ -n "${GIT_DIR:-}" ] || [ -n "${GIT_WORK_TREE:-}" ] ||
+   [ -n "${GIT_OBJECT_DIRECTORY:-}" ]; then
+  UNRESOLVED_TARGET=1
+fi
 C_OPTIONS=0
 CD_OPTIONS=0
 while IFS= read -r raw; do
@@ -442,7 +632,8 @@ if [ -n "${GIT_SAFE_CONFIG:-}" ]; then
   CONFIG_FILES=("$GIT_SAFE_CONFIG")
 elif [ "$UNRESOLVED_TARGET" = "0" ]; then
   for target in "${TARGET_DIRS[@]}"; do
-    root=$(git -C "$target" rev-parse --show-toplevel 2>/dev/null || true)
+    root=$(env -u GIT_DIR -u GIT_WORK_TREE -u GIT_OBJECT_DIRECTORY \
+      git -C "$target" rev-parse --show-toplevel 2>/dev/null || true)
     [ -n "$root" ] || root="$target"
     CONFIG_FILES+=("$root/.git-safe")
   done

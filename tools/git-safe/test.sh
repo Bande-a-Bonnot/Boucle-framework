@@ -364,6 +364,10 @@ assert_blocked "eval executes a quoted destructive command" \
   "$(hook_input "eval 'git reset --hard'")"
 assert_blocked "bash options before -c execute a destructive command" \
   "$(hook_input "bash -e -c 'git reset --hard'")"
+assert_blocked "bash -O option before -c executes a destructive command" \
+  "$(hook_input "bash -O extglob -c 'git reset --hard'")"
+assert_blocked "bash -o option before -c executes a destructive command" \
+  "$(hook_input "bash -o errexit -c 'git reset --hard'")"
 assert_blocked "dash -c executes a destructive command" \
   "$(hook_input "dash -c 'git reset --hard'")"
 assert_blocked "ksh options before -c execute a destructive command" \
@@ -384,6 +388,16 @@ assert_blocked "time flags before bash -c remain guarded" \
   "$(hook_input "time -p bash -c 'git reset --hard'")"
 assert_blocked "nested command and env wrappers remain guarded" \
   "$(hook_input "command env -i bash -c 'git reset --hard'")"
+assert_blocked "env flags before direct Git remain guarded" \
+  "$(hook_input 'env -i git reset --hard')"
+assert_blocked "command -p before direct Git remains guarded" \
+  "$(hook_input 'command -p git reset --hard')"
+assert_blocked "time -p before direct Git remains guarded" \
+  "$(hook_input 'time -p git reset --hard')"
+assert_blocked "sudo user flag before direct Git remains guarded" \
+  "$(hook_input 'sudo -u root git reset --hard')"
+assert_blocked "nested command and env wrappers before direct Git remain guarded" \
+  "$(hook_input 'command env -i git reset --hard')"
 assert_blocked "timeout argument before bash -c remains guarded" \
   "$(hook_input "timeout 5 bash -c 'git reset --hard'")"
 assert_blocked "nice arguments before bash -c remain guarded" \
@@ -394,6 +408,85 @@ assert_allowed "single-quoted command substitution in commit prose is literal" \
   "$(hook_input "git commit -m 'docs mention \$(git reset --hard)'")"
 assert_allowed "single-quoted wrapper prose remains literal" \
   "$(hook_input "git commit -m 'docs mention env -i bash -c git reset --hard'")"
+CONTINUED_GIT=$(printf '%s\n' 'git \' 'reset --hard')
+assert_blocked "backslash-newline joins direct Git command" \
+  "$(hook_input "$CONTINUED_GIT")"
+COMMENTED_BACKSLASH_THEN_GIT=$(printf '%s\n' '# prose \' 'git reset --hard')
+assert_blocked "comment backslash cannot swallow next Git command" \
+  "$(hook_input "$COMMENTED_BACKSLASH_THEN_GIT")"
+PAIRED_BACKSLASH_THEN_GIT=$(printf '%s\n' 'printf CANARY_FIRST\\' 'git reset --hard')
+assert_blocked "paired backslashes leave next Git command executable" \
+  "$(hook_input "$PAIRED_BACKSLASH_THEN_GIT")"
+QUOTED_BODY_BACKSLASH_THEN_GIT=$(printf '%s\n' "cat <<'EOF'" 'foo\' 'EOF' 'git reset --hard')
+assert_blocked "quoted here-doc body backslash cannot swallow next Git command" \
+  "$(hook_input "$QUOTED_BODY_BACKSLASH_THEN_GIT")"
+QUOTED_MARKER_THEN_GIT=$(cat <<'CMD'
+printf '%s\n' '<<EOF'
+git reset --hard
+EOF
+CMD
+)
+assert_blocked "quoted here-doc marker cannot hide next command" \
+  "$(hook_input "$QUOTED_MARKER_THEN_GIT")"
+COMMENTED_MARKER_THEN_GIT=$(cat <<'CMD'
+# <<EOF
+git reset --hard
+EOF
+CMD
+)
+assert_blocked "commented here-doc marker cannot hide next command" \
+  "$(hook_input "$COMMENTED_MARKER_THEN_GIT")"
+HERE_STRING_THEN_GIT=$(printf '%s\n' 'cat <<<EOF' 'git reset --hard')
+assert_blocked "here-string marker cannot hide next Git command" \
+  "$(hook_input "$HERE_STRING_THEN_GIT")"
+assert_blocked "escaped space before hash keeps following semicolon executable" \
+  "$(hook_input 'echo foo\ #; git reset --hard')"
+assert_blocked "escaped semicolon before hash keeps following semicolon executable" \
+  "$(hook_input 'echo foo\;#; git reset --hard')"
+PART_QUOTED_HEREDOC_THEN_GIT=$(cat <<'CMD'
+cat <<E"OF"
+body
+EOF
+git reset --hard
+CMD
+)
+assert_blocked "partly quoted here-doc delimiter cannot hide a later command" \
+  "$(hook_input "$PART_QUOTED_HEREDOC_THEN_GIT")"
+PART_QUOTED_HEREDOC_BODY=$(cat <<'CMD'
+cat <<E"OF"
+git reset --hard
+EOF
+CMD
+)
+assert_allowed "partly quoted here-doc body is literal data" \
+  "$(hook_input "$PART_QUOTED_HEREDOC_BODY")"
+DOUBLE_QUOTED_BACKSLASH_THEN_GIT=$(cat <<'CMD'
+cat <<"E\OF"
+body
+E\OF
+git reset --hard
+CMD
+)
+assert_blocked "double-quoted delimiter retains literal backslash before O" \
+  "$(hook_input "$DOUBLE_QUOTED_BACKSLASH_THEN_GIT")"
+DOUBLE_QUOTED_BACKSLASH_BODY=$(cat <<'CMD'
+cat <<"E\OF"
+git reset --hard
+E\OF
+CMD
+)
+assert_allowed "double-quoted backslash delimiter keeps body literal" \
+  "$(hook_input "$DOUBLE_QUOTED_BACKSLASH_BODY")"
+QUOTED_MARKER_SAFE=$(cat <<'CMD'
+printf '%s\n' '<<EOF'
+echo safe
+EOF
+CMD
+)
+assert_allowed "quoted here-doc marker with benign next line remains allowed" \
+  "$(hook_input "$QUOTED_MARKER_SAFE")"
+assert_allowed "commented destructive Git command is not executed" \
+  "$(hook_input '# git reset --hard')"
 HEREDOC_LITERAL_SUBSTITUTION=$(cat <<'CMD'
 git commit -F - <<'EOF'
 document `git reset --hard` and $(git reset --hard)
@@ -479,6 +572,11 @@ git init -q "$TMPDIR/denied"
 echo "allow: reset --hard" > "$TMPDIR/session/.git-safe"
 
 assert_blocked "git -C cannot bypass reset guard or borrow session allowlist" \
+  "$(hook_input_at "git -C $TMPDIR/target reset --hard" "$TMPDIR/session")"
+GIT_WORK_TREE="$TMPDIR/session" assert_blocked "inherited worktree cannot borrow session allowlist" \
+  "$(hook_input_at "git -C $TMPDIR/target reset --hard" "$TMPDIR/session")"
+GIT_DIR="$TMPDIR/session/.git" GIT_WORK_TREE="$TMPDIR/session" \
+  assert_blocked "inherited git-dir and worktree cannot borrow session allowlist" \
   "$(hook_input_at "git -C $TMPDIR/target reset --hard" "$TMPDIR/session")"
 assert_blocked "global -c before -C still uses target policy" \
   "$(hook_input_at "git -c color.ui=false -C $TMPDIR/target reset --hard" "$TMPDIR/session")"

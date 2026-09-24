@@ -67,6 +67,8 @@ checked too, including substitutions in unquoted here-doc bodies. Literal
 examples in single-quoted arguments and quoted here-doc bodies remain inert.
 Repeated `-C` targets are treated as ambiguous and require an
 explicit `GIT_SAFE_CONFIG` override for a guarded operation.
+Inherited `GIT_DIR`, `GIT_WORK_TREE`, or `GIT_OBJECT_DIRECTORY` likewise make
+the target ambiguous, so repository-local allowlists are not applied.
 
 Safe operations (`git status`, `git commit`, `git push`, `git branch -d`, etc.) pass through without interference.
 
