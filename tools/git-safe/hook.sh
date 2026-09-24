@@ -176,7 +176,7 @@ command_segments() {
       print out
       maybe_heredoc($0)
     }
-  ' <<< "$COMMAND"
+  ' <<< "${MATCH_COMMAND:-$COMMAND}"
 }
 
 is_git_binary_token() {
@@ -216,6 +216,25 @@ is_git_command_segment() {
   is_git_binary_token "${words[$i]}"
 }
 
+# Git accepts global options between `git` and the subcommand.  Match against
+# the command after removing those options, or `git -C dir reset --hard` escapes
+# every `git reset` rule below.  Keep COMMAND unchanged for logging and target
+# directory resolution.
+strip_git_globals() {
+  local command="$1" previous=""
+  while [ "$command" != "$previous" ]; do
+    previous="$command"
+    command=$(printf '%s' "$command" | sed -E "
+      s/(^|[^[:alnum:]_.-])git[[:space:]]+(-C|-c|--git-dir|--work-tree|--namespace|--config-env|--super-prefix)[[:space:]]+(\"[^\"]*\"|'[^']*'|[^[:space:]]+)/\\1git/g
+      s/(^|[^[:alnum:]_.-])git[[:space:]]+-C[^[:space:]]+/\1git/g
+      s/(^|[^[:alnum:]_.-])git[[:space:]]+(--git-dir|--work-tree|--namespace|--exec-path|--config-env|--super-prefix)=[^[:space:]]+/\1git/g
+      s/(^|[^[:alnum:]_.-])git[[:space:]]+(-p|-P|--paginate|--no-pager|--bare|--no-replace-objects|--literal-pathspecs|--glob-pathspecs|--noglob-pathspecs|--icase-pathspecs|--no-optional-locks)([[:space:]])/\1git\3/g
+    ")
+  done
+  printf '%s' "$command"
+}
+MATCH_COMMAND=$(strip_git_globals "$COMMAND")
+
 GIT_COMMANDS=""
 while IFS= read -r segment; do
   if is_git_command_segment "$segment"; then
@@ -241,30 +260,78 @@ if [ -z "$GIT_COMMANDS" ]; then
   exit 0
 fi
 
-# Load allowlist from .git-safe config
-ALLOWED=()
-CONFIG="${GIT_SAFE_CONFIG:-.git-safe}"
-if [ -f "$CONFIG" ]; then
+# Resolve policy from the repository the command targets, not the hook's own
+# process cwd.  A session in repo A can run `git -C repo-B ...` or `cd repo-B &&
+# git ...`; A's allowlist must never authorize destructive work in B.  Multiple
+# targets must all allow the operation.  Unresolvable explicit targets deny it.
+PAYLOAD_CWD=$(echo "$INPUT" | jq -r '.cwd // empty')
+[ -n "$PAYLOAD_CWD" ] || PAYLOAD_CWD="$PWD"
+
+target_path() {
+  local raw="$1"
+  raw="${raw#\"}"; raw="${raw%\"}"
+  raw="${raw#\'}"; raw="${raw%\'}"
+  (cd "$PAYLOAD_CWD" 2>/dev/null && cd "$raw" 2>/dev/null && pwd) || true
+}
+
+TARGET_DIRS=()
+UNRESOLVED_TARGET=0
+C_OPTIONS=0
+while IFS= read -r raw; do
+  [ -n "$raw" ] || continue
+  C_OPTIONS=$((C_OPTIONS + 1))
+  raw=$(printf '%s' "$raw" | sed -E 's/.*-C[[:space:]]+//')
+  target=$(target_path "$raw")
+  if [ -n "$target" ]; then TARGET_DIRS+=("$target"); else UNRESOLVED_TARGET=1; fi
+done < <(printf '%s\n' "$COMMAND" | grep -oE "(^|[[:space:]])-C[[:space:]]+('[^']*'|\"[^\"]*\"|[^[:space:];&|]+)" || true)
+# Repeated -C is relative to the preceding -C.  Do not borrow a policy from
+# the session or any intermediate directory when that final path is ambiguous.
+[ "$C_OPTIONS" -le 1 ] || UNRESOLVED_TARGET=1
+if printf '%s\n' "$COMMAND" | grep -qE '(^|[^[:alnum:]_.-])git[[:space:]]+-C[^[:space:]]|(^|[[:space:]])--(git-dir|work-tree)(=|[[:space:]])'; then
+  # Attached -C and alternate git-dir/work-tree forms are not resolved here.
+  UNRESOLVED_TARGET=1
+fi
+while IFS= read -r raw; do
+  [ -n "$raw" ] || continue
+  raw=$(printf '%s' "$raw" | sed -E 's/.*cd[[:space:]]+//')
+  target=$(target_path "$raw")
+  if [ -n "$target" ]; then TARGET_DIRS+=("$target"); else UNRESOLVED_TARGET=1; fi
+done < <(printf '%s\n' "$COMMAND" | grep -oE "(^|[;&|][[:space:]]*)cd[[:space:]]+('[^']*'|\"[^\"]*\"|[^[:space:];&|]+)" || true)
+[ ${#TARGET_DIRS[@]} -gt 0 ] || TARGET_DIRS=("$PAYLOAD_CWD")
+
+CONFIG_FILES=()
+if [ -n "${GIT_SAFE_CONFIG:-}" ]; then
+  CONFIG_FILES=("$GIT_SAFE_CONFIG")
+elif [ "$UNRESOLVED_TARGET" = "0" ]; then
+  for target in "${TARGET_DIRS[@]}"; do
+    root=$(git -C "$target" rev-parse --show-toplevel 2>/dev/null || true)
+    [ -n "$root" ] || root="$target"
+    CONFIG_FILES+=("$root/.git-safe")
+  done
+fi
+
+config_allows() {
+  local op="$1" config="$2" line pattern
+  [ -f "$config" ] || return 1
   while IFS= read -r line; do
     line=$(echo "$line" | sed 's/#.*//' | xargs)
     [ -z "$line" ] && continue
     if [[ "$line" == allow:* ]]; then
       pattern=$(echo "$line" | sed 's/^allow:\s*//' | xargs)
-      ALLOWED+=("$pattern")
+      [ "$pattern" = "$op" ] && return 0
     fi
-  done < "$CONFIG"
-fi
-
-# Check if an operation is allowed via config
-is_allowed() {
-  local op="$1"
-  for a in "${ALLOWED[@]+"${ALLOWED[@]}"}"; do
-    if [ "$a" = "$op" ]; then
-      log "ALLOWED by config: $op"
-      return 0
-    fi
-  done
+  done < "$config"
   return 1
+}
+
+is_allowed() {
+  local op="$1" config
+  [ ${#CONFIG_FILES[@]} -gt 0 ] || return 1
+  for config in "${CONFIG_FILES[@]}"; do
+    config_allows "$op" "$config" || return 1
+  done
+  log "ALLOWED by config: $op"
+  return 0
 }
 
 block() {

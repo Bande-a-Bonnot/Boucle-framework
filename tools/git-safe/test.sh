@@ -17,6 +17,11 @@ hook_input() {
   jq -cn --arg command "$1" '{"tool_name":"Bash","tool_input":{"command":$command}}'
 }
 
+hook_input_at() {
+  jq -cn --arg command "$1" --arg cwd "$2" \
+    '{"tool_name":"Bash","cwd":$cwd,"tool_input":{"command":$command}}'
+}
+
 assert_blocked() {
   local desc="$1"
   local input="$2"
@@ -345,6 +350,43 @@ assert_allowed "git commit -F heredoc body can mention git reset --hard" \
   "$(hook_input "$HEREDOC_COMMIT_MESSAGE")"
 assert_blocked "real destructive git command after harmless mention still blocks" \
   "$(hook_input 'echo "git reset --hard"; git reset --hard')"
+
+# Global Git options must not hide the subcommand.  Resolve .git-safe from the
+# target repo, not from the hook's process cwd or the session's initial repo.
+echo ""
+echo "Global options and target repository policy:"
+mkdir -p "$TMPDIR/session" "$TMPDIR/target" "$TMPDIR/target with spaces"
+git init -q "$TMPDIR/session"
+git init -q "$TMPDIR/target"
+git init -q "$TMPDIR/target with spaces"
+echo "allow: reset --hard" > "$TMPDIR/session/.git-safe"
+
+assert_blocked "git -C cannot bypass reset guard or borrow session allowlist" \
+  "$(hook_input_at "git -C $TMPDIR/target reset --hard" "$TMPDIR/session")"
+assert_blocked "global -c before -C still uses target policy" \
+  "$(hook_input_at "git -c color.ui=false -C $TMPDIR/target reset --hard" "$TMPDIR/session")"
+assert_blocked "attached -C path cannot borrow session allowlist" \
+  "$(hook_input_at "git -C$TMPDIR/target reset --hard" "$TMPDIR/session")"
+assert_blocked "alternate --git-dir path cannot borrow session allowlist" \
+  "$(hook_input_at "git --git-dir=$TMPDIR/target/.git reset --hard" "$TMPDIR/session")"
+assert_blocked "repeated -C cannot borrow an intermediate allowlist" \
+  "$(hook_input_at "git -C $TMPDIR/session -C ../target reset --hard" "$TMPDIR/session")"
+assert_blocked "git global -c cannot bypass reset guard" \
+  "$(hook_input_at 'git -c color.ui=false reset --hard' "$TMPDIR/target")"
+assert_blocked "git --no-pager cannot bypass reset guard" \
+  "$(hook_input_at 'git --no-pager reset --hard' "$TMPDIR/target")"
+assert_blocked "cd target cannot borrow session allowlist" \
+  "$(hook_input_at "cd $TMPDIR/target && git reset --hard" "$TMPDIR/session")"
+assert_blocked "quoted -C target with spaces is enforced" \
+  "$(hook_input_at "git -C '$TMPDIR/target with spaces' reset --hard" "$TMPDIR/session")"
+
+echo "allow: reset --hard" > "$TMPDIR/target/.git-safe"
+assert_allowed "target's own allowlist permits git -C reset" \
+  "$(hook_input_at "git -C $TMPDIR/target reset --hard" "$TMPDIR/session")"
+assert_allowed "target's own allowlist permits cd then reset" \
+  "$(hook_input_at "cd $TMPDIR/target && git reset --hard" "$TMPDIR/session")"
+assert_allowed "safe git -C status remains allowed" \
+  "$(hook_input_at "git -C $TMPDIR/target status" "$TMPDIR/session")"
 
 # --- Results ---
 echo ""
