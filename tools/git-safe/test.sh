@@ -665,6 +665,16 @@ assert_blocked "runtime eval command cannot hide hard reset" \
   "$(hook_input_at 'eval "$COMMAND"' "$TMPDIR/denied")"
 printf 'git status\n' > "$TMPDIR/denied/safe-script.sh"
 printf 'git reset --hard\n' > "$TMPDIR/denied/forbidden-script.sh"
+mkdir -p "$TMPDIR/env-chdir-target"
+cp "$TMPDIR/denied/forbidden-script.sh" "$TMPDIR/env-chdir-target/safe-script.sh"
+assert_blocked "env -C cannot inspect a script in the wrong directory" \
+  "$(hook_input_at "env -C $TMPDIR/env-chdir-target bash ./safe-script.sh" "$TMPDIR/denied")"
+assert_blocked "env attached -C cannot inspect a script in the wrong directory" \
+  "$(hook_input_at "env -C$TMPDIR/env-chdir-target bash ./safe-script.sh" "$TMPDIR/denied")"
+assert_blocked "env --chdir cannot inspect a script in the wrong directory" \
+  "$(hook_input_at "env --chdir $TMPDIR/env-chdir-target bash ./safe-script.sh" "$TMPDIR/denied")"
+assert_blocked "env --chdir= cannot inspect a script in the wrong directory" \
+  "$(hook_input_at "env --chdir=$TMPDIR/env-chdir-target bash ./safe-script.sh" "$TMPDIR/denied")"
 cp "$TMPDIR/denied/safe-script.sh" "$TMPDIR/denied/safe-script"
 cp "$TMPDIR/denied/forbidden-script.sh" "$TMPDIR/denied/forbidden-script"
 printf './forbidden-script.sh\n' > "$TMPDIR/denied/nested-script.sh"

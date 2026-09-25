@@ -732,8 +732,9 @@ append_literal_script_contents() {
           i=$((i + 1))
           while [ $i -lt ${#words[@]} ]; do
             case "${words[$i]}" in
-              -u|--unset|-C|--chdir) i=$((i + 2)) ;;
-              -i|--ignore-environment|-0|--null|--unset=*|--chdir=*) i=$((i + 1)) ;;
+              -u|--unset) i=$((i + 2)) ;;
+              -C|--chdir|-C?*|--chdir=*) return 1 ;;
+              -i|--ignore-environment|-0|--null|--unset=*) i=$((i + 1)) ;;
               --) i=$((i + 1)); break ;;
               -*) return 1 ;;
               *=*) i=$((i + 1)) ;;
