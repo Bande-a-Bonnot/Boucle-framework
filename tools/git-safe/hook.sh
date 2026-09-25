@@ -719,7 +719,7 @@ mark_opaque_segments() {
 }
 
 append_literal_script_contents() {
-  local segments="$1" depth="${2:-0}" segment words=() token path script_path script_body nested_segments seen i
+  local segments="$1" depth="${2:-0}" segment words=() token path script_path script_body nested_segments seen i interpreter
   [ "$depth" -lt 16 ] || return 1
   while IFS= read -r segment; do
     read -r -a words <<< "$segment"
@@ -728,34 +728,88 @@ append_literal_script_contents() {
       token="${words[$i]}"
       if is_assignment_token "$token"; then i=$((i + 1)); continue; fi
       case "$token" in
-        env|command|exec|nohup) i=$((i + 1)); continue ;;
+        env)
+          i=$((i + 1))
+          while [ $i -lt ${#words[@]} ]; do
+            case "${words[$i]}" in
+              -u|--unset|-C|--chdir) i=$((i + 2)) ;;
+              -i|--ignore-environment|-0|--null|--unset=*|--chdir=*) i=$((i + 1)) ;;
+              --) i=$((i + 1)); break ;;
+              -*) return 1 ;;
+              *=*) i=$((i + 1)) ;;
+              *) break ;;
+            esac
+          done
+          continue ;;
+        command|builtin)
+          i=$((i + 1))
+          while [ $i -lt ${#words[@]} ]; do
+            case "${words[$i]}" in
+              -p|--) i=$((i + 1)) ;;
+              -*) return 1 ;;
+              *) break ;;
+            esac
+          done
+          continue ;;
+        exec)
+          i=$((i + 1))
+          while [ $i -lt ${#words[@]} ]; do
+            case "${words[$i]}" in
+              -a) i=$((i + 2)) ;;
+              -c|-l|--) i=$((i + 1)) ;;
+              -*) return 1 ;;
+              *) break ;;
+            esac
+          done
+          continue ;;
+        nohup) i=$((i + 1)); continue ;;
+        sudo|time|nice|timeout|stdbuf|caffeinate)
+          i=$((i + 1))
+          while [ $i -lt ${#words[@]} ]; do
+            case "${words[$i]}" in
+              --) i=$((i + 1)); break ;;
+              -u|-g|-h|-p|-C|-r|-t|-f|-o|-n|-s|-k|-i|-e|-D)
+                i=$((i + 2)) ;;
+              -*) i=$((i + 1)) ;;
+              *) break ;;
+            esac
+          done
+          case "$token" in timeout) i=$((i + 1)) ;; esac
+          continue ;;
       esac
       break
     done
     [ $i -lt ${#words[@]} ] || continue
     path=""
+    interpreter=0
     token="${words[$i]}"
     case "$token" in
-      source|.) path="${words[$((i + 1))]:-}" ;;
+      source|.) interpreter=1; path="${words[$((i + 1))]:-}" ;;
       bash|sh|zsh|dash|ksh)
+        interpreter=1
         i=$((i + 1))
-        while [ $i -lt ${#words[@]} ] && [[ "${words[$i]}" == -* ]]; do
-          [ "${words[$i]}" = "-c" ] && break
+        while [ $i -lt ${#words[@]} ] && [[ "${words[$i]}" == [-+]* ]]; do
+          case "${words[$i]}" in
+            -c|--command|-[A-Za-z]*c[A-Za-z]*) break ;;
+            -O|-o|+O|+o) i=$((i + 1)) ;;
+          esac
           i=$((i + 1))
         done
-        if [ $i -lt ${#words[@]} ] && [ "${words[$i]}" != "-c" ]; then
-          path="${words[$i]}"
+        if [ $i -lt ${#words[@]} ]; then
+          case "${words[$i]}" in
+            -c|--command|-[A-Za-z]*c[A-Za-z]*) ;;
+            *) path="${words[$i]}" ;;
+          esac
         fi ;;
-      *.sh|./*.sh|../*.sh) path="$token" ;;
+      ./*|../*|/*|*.sh) path="$token" ;;
     esac
       [ -n "$path" ] || continue
       case "$path" in *'$'*|*'`'*|*'__GIT_SAFE_'*) return 1 ;; esac
       path="${path#\"}"; path="${path%\"}"
       path="${path#\'}"; path="${path%\'}"
-      case "$path" in
-        *.sh) ;;
-        *) continue ;;
-      esac
+      if [ "$interpreter" = "0" ]; then
+        case "$path" in ./*|../*|/*|*.sh) ;; *) continue ;; esac
+      fi
       if [[ "$path" = /* ]]; then
         script_path="$path"
       else

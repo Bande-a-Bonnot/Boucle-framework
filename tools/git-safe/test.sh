@@ -665,6 +665,8 @@ assert_blocked "runtime eval command cannot hide hard reset" \
   "$(hook_input_at 'eval "$COMMAND"' "$TMPDIR/denied")"
 printf 'git status\n' > "$TMPDIR/denied/safe-script.sh"
 printf 'git reset --hard\n' > "$TMPDIR/denied/forbidden-script.sh"
+cp "$TMPDIR/denied/safe-script.sh" "$TMPDIR/denied/safe-script"
+cp "$TMPDIR/denied/forbidden-script.sh" "$TMPDIR/denied/forbidden-script"
 printf './forbidden-script.sh\n' > "$TMPDIR/denied/nested-script.sh"
 assert_allowed "script filename printed as data remains allowed" \
   "$(hook_input_at 'echo missing.sh' "$TMPDIR/denied")"
@@ -672,12 +674,42 @@ assert_allowed "script filename passed to Git add remains allowed" \
   "$(hook_input_at 'git add missing.sh' "$TMPDIR/denied")"
 assert_allowed "shell script with safe Git remains allowed" \
   "$(hook_input_at 'bash ./safe-script.sh' "$TMPDIR/denied")"
+assert_allowed "extensionless safe shell script remains allowed" \
+  "$(hook_input_at 'bash ./safe-script' "$TMPDIR/denied")"
 assert_allowed "direct safe script remains allowed" \
   "$(hook_input_at './safe-script.sh' "$TMPDIR/denied")"
 assert_allowed "sourced safe script remains allowed" \
   "$(hook_input_at 'source ./safe-script.sh' "$TMPDIR/denied")"
 assert_blocked "shell script cannot hide hard reset" \
   "$(hook_input_at 'bash ./forbidden-script.sh' "$TMPDIR/denied")"
+assert_blocked "extensionless shell script cannot hide hard reset" \
+  "$(hook_input_at 'bash ./forbidden-script' "$TMPDIR/denied")"
+assert_blocked "interpreter -O argument cannot hide script" \
+  "$(hook_input_at 'bash -O extglob ./forbidden-script.sh' "$TMPDIR/denied")"
+assert_blocked "interpreter -o argument cannot hide script" \
+  "$(hook_input_at 'bash -o errexit ./forbidden-script.sh' "$TMPDIR/denied")"
+assert_blocked "sudo wrapper cannot hide script" \
+  "$(hook_input_at 'sudo ./forbidden-script.sh' "$TMPDIR/denied")"
+assert_blocked "sudo option argument cannot hide script" \
+  "$(hook_input_at 'sudo -u root ./forbidden-script.sh' "$TMPDIR/denied")"
+assert_blocked "sudo directory option cannot hide script" \
+  "$(hook_input_at 'sudo -D . ./forbidden-script.sh' "$TMPDIR/denied")"
+assert_blocked "env option argument cannot hide script" \
+  "$(hook_input_at 'env -u UNUSED bash ./forbidden-script.sh' "$TMPDIR/denied")"
+assert_blocked "exec option argument cannot hide script" \
+  "$(hook_input_at 'exec -a shell bash ./forbidden-script.sh' "$TMPDIR/denied")"
+assert_blocked "command option cannot hide script" \
+  "$(hook_input_at 'command -p bash ./forbidden-script.sh' "$TMPDIR/denied")"
+assert_blocked "time wrapper cannot hide script" \
+  "$(hook_input_at 'time bash ./forbidden-script.sh' "$TMPDIR/denied")"
+assert_blocked "nice wrapper cannot hide script" \
+  "$(hook_input_at 'nice -n 5 bash ./forbidden-script.sh' "$TMPDIR/denied")"
+assert_blocked "timeout wrapper cannot hide script" \
+  "$(hook_input_at 'timeout 10 bash ./forbidden-script.sh' "$TMPDIR/denied")"
+assert_blocked "stdbuf wrapper cannot hide script" \
+  "$(hook_input_at 'stdbuf -oL bash ./forbidden-script.sh' "$TMPDIR/denied")"
+assert_blocked "builtin source cannot hide script" \
+  "$(hook_input_at 'builtin source ./forbidden-script.sh' "$TMPDIR/denied")"
 assert_blocked "direct script cannot hide hard reset" \
   "$(hook_input_at './forbidden-script.sh' "$TMPDIR/denied")"
 assert_blocked "sourced script cannot hide hard reset" \
