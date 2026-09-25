@@ -768,9 +768,52 @@ append_literal_script_contents() {
           while [ $i -lt ${#words[@]} ]; do
             case "${words[$i]}" in
               --) i=$((i + 1)); break ;;
-              -u|-g|-h|-p|-C|-r|-t|-f|-o|-n|-s|-k|-i|-e|-D)
+              -u|-g|-h|-C|-r|-t|-D)
+                [ "$token" = sudo ] || return 1
                 i=$((i + 2)) ;;
-              -*) i=$((i + 1)) ;;
+              --user|--group|--host|--chdir|--role|--type)
+                [ "$token" = sudo ] || return 1
+                i=$((i + 2)) ;;
+              --user=*|--group=*|--host=*|--chdir=*|--role=*|--type=*)
+                [ "$token" = sudo ] || return 1
+                i=$((i + 1)) ;;
+              -p)
+                if [ "$token" = sudo ]; then i=$((i + 2)); else i=$((i + 1)); fi ;;
+              -f|-o)
+                [ "$token" = time ] || [ "$token" = stdbuf ] || return 1
+                i=$((i + 2)) ;;
+              -n)
+                if [ "$token" = nice ]; then i=$((i + 2));
+                elif [ "$token" = sudo ]; then i=$((i + 1));
+                else return 1; fi ;;
+              -s|-k)
+                if [ "$token" = timeout ]; then i=$((i + 2));
+                elif [ "$token" = sudo ]; then i=$((i + 1));
+                else return 1; fi ;;
+              -i|-e)
+                [ "$token" = stdbuf ] || return 1
+                i=$((i + 2)) ;;
+              --adjustment)
+                [ "$token" = nice ] || return 1
+                i=$((i + 2)) ;;
+              --signal|--kill-after)
+                [ "$token" = timeout ] || return 1
+                i=$((i + 2)) ;;
+              --adjustment=*)
+                [ "$token" = nice ] || return 1
+                i=$((i + 1)) ;;
+              --signal=*|--kill-after=*)
+                [ "$token" = timeout ] || return 1
+                i=$((i + 1)) ;;
+              -o?*|-i?*|-e?*)
+                [ "$token" = stdbuf ] || return 1
+                i=$((i + 1)) ;;
+              -[0-9]*)
+                [ "$token" = nice ] || return 1
+                i=$((i + 1)) ;;
+              -n|-E|-H|-k|-K|-S|-b|-v|-P|-l|-s|-p)
+                i=$((i + 1)) ;;
+              -*) return 1 ;;
               *) break ;;
             esac
           done

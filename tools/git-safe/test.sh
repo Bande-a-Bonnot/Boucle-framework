@@ -692,6 +692,8 @@ assert_blocked "sudo wrapper cannot hide script" \
   "$(hook_input_at 'sudo ./forbidden-script.sh' "$TMPDIR/denied")"
 assert_blocked "sudo option argument cannot hide script" \
   "$(hook_input_at 'sudo -u root ./forbidden-script.sh' "$TMPDIR/denied")"
+assert_blocked "sudo long option argument cannot hide script" \
+  "$(hook_input_at 'sudo --user root bash ./forbidden-script.sh' "$TMPDIR/denied")"
 assert_blocked "sudo directory option cannot hide script" \
   "$(hook_input_at 'sudo -D . ./forbidden-script.sh' "$TMPDIR/denied")"
 assert_blocked "env option argument cannot hide script" \
@@ -702,6 +704,8 @@ assert_blocked "command option cannot hide script" \
   "$(hook_input_at 'command -p bash ./forbidden-script.sh' "$TMPDIR/denied")"
 assert_blocked "time wrapper cannot hide script" \
   "$(hook_input_at 'time bash ./forbidden-script.sh' "$TMPDIR/denied")"
+assert_blocked "time flag and interpreter option cannot hide script" \
+  "$(hook_input_at 'time -p bash -O extglob ./forbidden-script.sh' "$TMPDIR/denied")"
 assert_blocked "nice wrapper cannot hide script" \
   "$(hook_input_at 'nice -n 5 bash ./forbidden-script.sh' "$TMPDIR/denied")"
 assert_blocked "timeout wrapper cannot hide script" \
