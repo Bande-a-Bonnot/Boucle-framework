@@ -665,6 +665,11 @@ assert_blocked "runtime eval command cannot hide hard reset" \
   "$(hook_input_at 'eval "$COMMAND"' "$TMPDIR/denied")"
 printf 'git status\n' > "$TMPDIR/denied/safe-script.sh"
 printf 'git reset --hard\n' > "$TMPDIR/denied/forbidden-script.sh"
+printf './forbidden-script.sh\n' > "$TMPDIR/denied/nested-script.sh"
+assert_allowed "script filename printed as data remains allowed" \
+  "$(hook_input_at 'echo missing.sh' "$TMPDIR/denied")"
+assert_allowed "script filename passed to Git add remains allowed" \
+  "$(hook_input_at 'git add missing.sh' "$TMPDIR/denied")"
 assert_allowed "shell script with safe Git remains allowed" \
   "$(hook_input_at 'bash ./safe-script.sh' "$TMPDIR/denied")"
 assert_allowed "direct safe script remains allowed" \
@@ -677,6 +682,14 @@ assert_blocked "direct script cannot hide hard reset" \
   "$(hook_input_at './forbidden-script.sh' "$TMPDIR/denied")"
 assert_blocked "sourced script cannot hide hard reset" \
   "$(hook_input_at 'source ./forbidden-script.sh' "$TMPDIR/denied")"
+assert_blocked "script on a later line cannot hide hard reset" \
+  "$(hook_input_at $'echo safe\n./forbidden-script.sh' "$TMPDIR/denied")"
+assert_blocked "nested script cannot hide hard reset" \
+  "$(hook_input_at 'bash ./nested-script.sh' "$TMPDIR/denied")"
+assert_allowed "quoted here-doc body mentioning a script is literal data" \
+  "$(hook_input_at "cat <<'EOF'
+./forbidden-script.sh
+EOF" "$TMPDIR/denied")"
 
 # Runtime-selected Git operands and aliases are executable policy inputs, not
 # inert prose. These payloads are inspected by the hook; they are not executed.

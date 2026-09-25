@@ -719,15 +719,24 @@ mark_opaque_segments() {
 }
 
 append_literal_script_contents() {
-  local words=() token path script_path script_body i=0
-  read -r -a words <<< "$COMMAND"
-  while [ $i -lt ${#words[@]} ]; do
-    token="${words[$i]}"
+  local segments="$1" depth="${2:-0}" segment words=() token path script_path script_body nested_segments seen i
+  [ "$depth" -lt 16 ] || return 1
+  while IFS= read -r segment; do
+    read -r -a words <<< "$segment"
+    i=0
+    while [ $i -lt ${#words[@]} ]; do
+      token="${words[$i]}"
+      if is_assignment_token "$token"; then i=$((i + 1)); continue; fi
+      case "$token" in
+        env|command|exec|nohup) i=$((i + 1)); continue ;;
+      esac
+      break
+    done
+    [ $i -lt ${#words[@]} ] || continue
     path=""
+    token="${words[$i]}"
     case "$token" in
-      source|.)
-        path="${words[$((i + 1))]:-}"
-        i=$((i + 2)) ;;
+      source|.) path="${words[$((i + 1))]:-}" ;;
       bash|sh|zsh|dash|ksh)
         i=$((i + 1))
         while [ $i -lt ${#words[@]} ] && [[ "${words[$i]}" == -* ]]; do
@@ -736,31 +745,34 @@ append_literal_script_contents() {
         done
         if [ $i -lt ${#words[@]} ] && [ "${words[$i]}" != "-c" ]; then
           path="${words[$i]}"
-          i=$((i + 1))
         fi ;;
-      *.sh|./*.sh|../*.sh)
-        path="$token"
-        i=$((i + 1)) ;;
-      *)
-        i=$((i + 1)) ;;
+      *.sh|./*.sh|../*.sh) path="$token" ;;
     esac
-    [ -n "$path" ] || continue
-    case "$path" in *'$'*|*'`'*|*'__GIT_SAFE_'*) return 1 ;; esac
-    path="${path#\"}"; path="${path%\"}"
-    path="${path#\'}"; path="${path%\'}"
-    case "$path" in
-      *.sh) ;;
-      *) continue ;;
-    esac
-    if [[ "$path" = /* ]]; then
-      script_path="$path"
-    else
-      script_path="$PAYLOAD_CWD/$path"
-    fi
-    [ -f "$script_path" ] || return 1
-    script_body=$(<"$script_path") || return 1
-    COMMAND="${COMMAND}"$'\n'"${script_body}"
-  done
+      [ -n "$path" ] || continue
+      case "$path" in *'$'*|*'`'*|*'__GIT_SAFE_'*) return 1 ;; esac
+      path="${path#\"}"; path="${path%\"}"
+      path="${path#\'}"; path="${path%\'}"
+      case "$path" in
+        *.sh) ;;
+        *) continue ;;
+      esac
+      if [[ "$path" = /* ]]; then
+        script_path="$path"
+      else
+        script_path="$PAYLOAD_CWD/$path"
+      fi
+      [ -f "$script_path" ] || return 1
+      seen=""
+      for seen in "${SCRIPT_SEEN[@]}"; do
+        [ "$seen" != "$script_path" ] || break
+      done
+      [ "$seen" != "$script_path" ] || continue
+      SCRIPT_SEEN+=("$script_path")
+      script_body=$(<"$script_path") || return 1
+      COMMAND="${COMMAND}"$'\n'"${script_body}"
+      nested_segments=$(COMMAND="$script_body" command_segments) || return 1
+      append_literal_script_contents "$nested_segments" "$((depth + 1))" || return 1
+  done <<< "$segments"
 }
 
 GIT_COMMANDS=""
@@ -774,13 +786,18 @@ CURRENT_OPAQUE_EXEC=0
 GIT_CANDIDATE_INDEX=0
 OPAQUE_EXEC_LINES=""
 DYNAMIC_SHELL=0
+SCRIPT_SEEN=("")
 SAFE_CD_CHAIN=0
 # Only this single, guarded cd form can omit the starting cwd from policy
 # checks. Other control flow may run Git in the starting directory.
 if [[ "$COMMAND" =~ ^[[:space:]]*cd[[:space:]]+[^\;\&\|]+[[:space:]]*\&\&[[:space:]]*git[[:space:]]+[^\;\&\|]*$ ]]; then
   SAFE_CD_CHAIN=1
 fi
-if ! append_literal_script_contents; then
+if ! original_segments=$(command_segments); then
+  printf '%s\n' 'git-safe: command inspection failed.' >&2
+  exit 2
+fi
+if ! append_literal_script_contents "$original_segments"; then
   printf '%s\n' 'git-safe: Script contents cannot be inspected safely.' >&2
   exit 2
 fi
