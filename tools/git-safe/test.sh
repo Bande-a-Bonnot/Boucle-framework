@@ -4,6 +4,11 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 HOOK="$SCRIPT_DIR/hook.sh"
+TMPDIR=$(mktemp -d)
+trap "rm -rf $TMPDIR" EXIT
+TEST_CWD="$TMPDIR/default-cwd"
+mkdir -p "$TEST_CWD"
+cd "$TEST_CWD"
 PASS=0
 FAIL=0
 TOTAL=0
@@ -14,7 +19,13 @@ GREEN='\033[0;32m'
 NC='\033[0m'
 
 hook_input() {
-  jq -cn --arg command "$1" '{"tool_name":"Bash","tool_input":{"command":$command}}'
+  jq -cn --arg command "$1" --arg cwd "$TEST_CWD" \
+    '{"tool_name":"Bash","cwd":$cwd,"tool_input":{"command":$command}}'
+}
+
+hook_input_at() {
+  jq -cn --arg command "$1" --arg cwd "$2" \
+    '{"tool_name":"Bash","cwd":$cwd,"tool_input":{"command":$command}}'
 }
 
 assert_blocked() {
@@ -262,8 +273,11 @@ echo ""
 echo "Allowlist config:"
 
 # Create temp config
-TMPDIR=$(mktemp -d)
-trap "rm -rf $TMPDIR" EXIT
+mkdir -p "$TMPDIR/fail-awk"
+printf '#!/bin/sh\nexit 1\n' > "$TMPDIR/fail-awk/awk"
+chmod +x "$TMPDIR/fail-awk/awk"
+PATH="$TMPDIR/fail-awk:$PATH" assert_blocked "shell scanner failure denies before execution" \
+  "$(hook_input "git status")"
 
 echo "allow: reset --hard" > "$TMPDIR/.git-safe"
 echo "allow: push --force" >> "$TMPDIR/.git-safe"
@@ -345,6 +359,617 @@ assert_allowed "git commit -F heredoc body can mention git reset --hard" \
   "$(hook_input "$HEREDOC_COMMIT_MESSAGE")"
 assert_blocked "real destructive git command after harmless mention still blocks" \
   "$(hook_input 'echo "git reset --hard"; git reset --hard')"
+assert_blocked "bash -c executes a quoted destructive command" \
+  "$(hook_input 'bash -c "git reset --hard"')"
+assert_blocked "sh -c executes a single-quoted destructive command" \
+  "$(hook_input "sh -c 'git reset --hard'")"
+assert_blocked "command substitution executes inside a double quote" \
+  "$(hook_input 'echo "$(git reset --hard)"')"
+assert_blocked "backtick substitution executes a destructive command" \
+  "$(hook_input 'echo `git reset --hard`')"
+assert_blocked "commit message substitution executes before commit" \
+  "$(hook_input 'git commit -m "$(git reset --hard)"')"
+assert_blocked "eval executes a quoted destructive command" \
+  "$(hook_input "eval 'git reset --hard'")"
+assert_blocked "bash options before -c execute a destructive command" \
+  "$(hook_input "bash -e -c 'git reset --hard'")"
+assert_blocked "bash -O option before -c executes a destructive command" \
+  "$(hook_input "bash -O extglob -c 'git reset --hard'")"
+assert_blocked "bash -o option before -c executes a destructive command" \
+  "$(hook_input "bash -o errexit -c 'git reset --hard'")"
+assert_blocked "dash -c executes a destructive command" \
+  "$(hook_input "dash -c 'git reset --hard'")"
+assert_blocked "ksh options before -c execute a destructive command" \
+  "$(hook_input "ksh -e -c 'git reset --hard'")"
+assert_blocked "eval cannot combine shell wrapping and a Git global option" \
+  "$(hook_input "eval 'git --no-advice reset --hard'")"
+assert_blocked "bash -c cannot combine shell wrapping and a Git global option" \
+  "$(hook_input "bash -c 'git --no-advice reset --hard'")"
+assert_blocked "command substitution cannot combine with a Git global option" \
+  "$(hook_input 'echo "$(git --no-advice reset --hard)"')"
+assert_blocked "sudo shell command remains guarded" \
+  "$(hook_input "sudo bash -c 'git reset --hard'")"
+assert_blocked "env flags before bash -c remain guarded" \
+  "$(hook_input "env -i bash -c 'git reset --hard'")"
+assert_blocked "sudo flags and arguments before bash -c remain guarded" \
+  "$(hook_input "sudo -u root bash -c 'git reset --hard'")"
+assert_blocked "time flags before bash -c remain guarded" \
+  "$(hook_input "time -p bash -c 'git reset --hard'")"
+assert_blocked "nested command and env wrappers remain guarded" \
+  "$(hook_input "command env -i bash -c 'git reset --hard'")"
+assert_blocked "env flags before direct Git remain guarded" \
+  "$(hook_input 'env -i git reset --hard')"
+assert_blocked "command -p before direct Git remains guarded" \
+  "$(hook_input 'command -p git reset --hard')"
+assert_blocked "time -p before direct Git remains guarded" \
+  "$(hook_input 'time -p git reset --hard')"
+assert_blocked "sudo user flag before direct Git remains guarded" \
+  "$(hook_input 'sudo -u root git reset --hard')"
+assert_blocked "nested command and env wrappers before direct Git remain guarded" \
+  "$(hook_input 'command env -i git reset --hard')"
+assert_blocked "timeout argument before bash -c remains guarded" \
+  "$(hook_input "timeout 5 bash -c 'git reset --hard'")"
+assert_blocked "nice arguments before bash -c remain guarded" \
+  "$(hook_input "nice -n 10 bash -c 'git reset --hard'")"
+assert_allowed "single-quoted backticks in commit prose are literal" \
+  "$(hook_input "git commit -m 'docs mention \`git reset --hard\`'")"
+assert_allowed "single-quoted command substitution in commit prose is literal" \
+  "$(hook_input "git commit -m 'docs mention \$(git reset --hard)'")"
+assert_allowed "single-quoted wrapper prose remains literal" \
+  "$(hook_input "git commit -m 'docs mention env -i bash -c git reset --hard'")"
+CONTINUED_GIT=$(printf '%s\n' 'git \' 'reset --hard')
+assert_blocked "backslash-newline joins direct Git command" \
+  "$(hook_input "$CONTINUED_GIT")"
+COMMENTED_BACKSLASH_THEN_GIT=$(printf '%s\n' '# prose \' 'git reset --hard')
+assert_blocked "comment backslash cannot swallow next Git command" \
+  "$(hook_input "$COMMENTED_BACKSLASH_THEN_GIT")"
+PAIRED_BACKSLASH_THEN_GIT=$(printf '%s\n' 'printf CANARY_FIRST\\' 'git reset --hard')
+assert_blocked "paired backslashes leave next Git command executable" \
+  "$(hook_input "$PAIRED_BACKSLASH_THEN_GIT")"
+QUOTED_BODY_BACKSLASH_THEN_GIT=$(printf '%s\n' "cat <<'EOF'" 'foo\' 'EOF' 'git reset --hard')
+assert_blocked "quoted here-doc body backslash cannot swallow next Git command" \
+  "$(hook_input "$QUOTED_BODY_BACKSLASH_THEN_GIT")"
+QUOTED_MARKER_THEN_GIT=$(cat <<'CMD'
+printf '%s\n' '<<EOF'
+git reset --hard
+EOF
+CMD
+)
+assert_blocked "quoted here-doc marker cannot hide next command" \
+  "$(hook_input "$QUOTED_MARKER_THEN_GIT")"
+COMMENTED_MARKER_THEN_GIT=$(cat <<'CMD'
+# <<EOF
+git reset --hard
+EOF
+CMD
+)
+assert_blocked "commented here-doc marker cannot hide next command" \
+  "$(hook_input "$COMMENTED_MARKER_THEN_GIT")"
+HERE_STRING_THEN_GIT=$(printf '%s\n' 'cat <<<EOF' 'git reset --hard')
+assert_blocked "here-string marker cannot hide next Git command" \
+  "$(hook_input "$HERE_STRING_THEN_GIT")"
+assert_blocked "escaped space before hash keeps following semicolon executable" \
+  "$(hook_input 'echo foo\ #; git reset --hard')"
+assert_blocked "escaped semicolon before hash keeps following semicolon executable" \
+  "$(hook_input 'echo foo\;#; git reset --hard')"
+PART_QUOTED_HEREDOC_THEN_GIT=$(cat <<'CMD'
+cat <<E"OF"
+body
+EOF
+git reset --hard
+CMD
+)
+assert_blocked "partly quoted here-doc delimiter cannot hide a later command" \
+  "$(hook_input "$PART_QUOTED_HEREDOC_THEN_GIT")"
+PART_QUOTED_HEREDOC_BODY=$(cat <<'CMD'
+cat <<E"OF"
+git reset --hard
+EOF
+CMD
+)
+assert_allowed "partly quoted here-doc body is literal data" \
+  "$(hook_input "$PART_QUOTED_HEREDOC_BODY")"
+DOUBLE_QUOTED_BACKSLASH_THEN_GIT=$(cat <<'CMD'
+cat <<"E\OF"
+body
+E\OF
+git reset --hard
+CMD
+)
+assert_blocked "double-quoted delimiter retains literal backslash before O" \
+  "$(hook_input "$DOUBLE_QUOTED_BACKSLASH_THEN_GIT")"
+DOUBLE_QUOTED_BACKSLASH_BODY=$(cat <<'CMD'
+cat <<"E\OF"
+git reset --hard
+E\OF
+CMD
+)
+assert_allowed "double-quoted backslash delimiter keeps body literal" \
+  "$(hook_input "$DOUBLE_QUOTED_BACKSLASH_BODY")"
+QUOTED_MARKER_SAFE=$(cat <<'CMD'
+printf '%s\n' '<<EOF'
+echo safe
+EOF
+CMD
+)
+assert_allowed "quoted here-doc marker with benign next line remains allowed" \
+  "$(hook_input "$QUOTED_MARKER_SAFE")"
+assert_allowed "commented destructive Git command is not executed" \
+  "$(hook_input '# git reset --hard')"
+HEREDOC_LITERAL_SUBSTITUTION=$(cat <<'CMD'
+git commit -F - <<'EOF'
+document `git reset --hard` and $(git reset --hard)
+EOF
+CMD
+)
+assert_allowed "literal here-doc substitution examples remain prose" \
+  "$(hook_input "$HEREDOC_LITERAL_SUBSTITUTION")"
+UNQUOTED_HEREDOC_SUBSTITUTION=$(cat <<'CMD'
+cat <<EOF
+$(git reset --hard)
+EOF
+CMD
+)
+assert_blocked "unquoted here-doc command substitution executes" \
+  "$(hook_input "$UNQUOTED_HEREDOC_SUBSTITUTION")"
+UNQUOTED_HEREDOC_BACKTICKS=$(cat <<'CMD'
+cat <<EOF
+`git reset --hard`
+EOF
+CMD
+)
+assert_blocked "unquoted here-doc backticks execute" \
+  "$(hook_input "$UNQUOTED_HEREDOC_BACKTICKS")"
+UNQUOTED_HEREDOC_GLOBAL=$(cat <<'CMD'
+cat <<EOF
+$(git --no-advice reset --hard)
+EOF
+CMD
+)
+assert_blocked "unquoted here-doc substitution with Git global option executes" \
+  "$(hook_input "$UNQUOTED_HEREDOC_GLOBAL")"
+MULTILINE_GLOBAL_SUBSTITUTION=$(cat <<'CMD'
+echo ok
+$(git --no-advice reset --hard)
+CMD
+)
+assert_blocked "multiline command substitution with Git global option executes" \
+  "$(hook_input "$MULTILINE_GLOBAL_SUBSTITUTION")"
+MULTILINE_GLOBAL_SHELL=$(cat <<'CMD'
+echo ok
+bash -c 'git --no-advice reset --hard'
+CMD
+)
+assert_blocked "multiline shell -c with Git global option executes" \
+  "$(hook_input "$MULTILINE_GLOBAL_SHELL")"
+QUOTED_HEREDOC_LITERAL=$(cat <<'CMD'
+cat <<'EOF'
+$(git reset --hard)
+`git reset --hard`
+EOF
+CMD
+)
+assert_allowed "quoted here-doc body does not execute substitutions" \
+  "$(hook_input "$QUOTED_HEREDOC_LITERAL")"
+QUOTED_HEREDOC_GLOBAL=$(cat <<'CMD'
+cat <<'EOF'
+$(git --no-advice reset --hard)
+EOF
+CMD
+)
+assert_allowed "quoted here-doc global-option example remains literal" \
+  "$(hook_input "$QUOTED_HEREDOC_GLOBAL")"
+ESCAPED_HEREDOC_LITERAL=$(cat <<'CMD'
+cat <<EOF
+\$(git reset --hard)
+\`git reset --hard\`
+EOF
+CMD
+)
+assert_allowed "escaped substitutions in unquoted here-doc remain literal" \
+  "$(hook_input "$ESCAPED_HEREDOC_LITERAL")"
+
+# Global Git options must not hide the subcommand.  Resolve .git-safe from the
+# target repo, not from the hook's process cwd or the session's initial repo.
+echo ""
+echo "Global options and target repository policy:"
+unset GIT_DIR GIT_WORK_TREE GIT_OBJECT_DIRECTORY
+mkdir -p "$TMPDIR/session" "$TMPDIR/target" "$TMPDIR/target with spaces" "$TMPDIR/denied"
+git init -q "$TMPDIR/session"
+git init -q "$TMPDIR/target"
+git init -q "$TMPDIR/target with spaces"
+git init -q "$TMPDIR/denied"
+echo "allow: reset --hard" > "$TMPDIR/session/.git-safe"
+
+assert_blocked "env -S cannot borrow session reset allowlist" \
+  "$(hook_input_at "env -S 'git reset --hard'" "$TMPDIR/session")"
+assert_blocked "attached quoted env -S cannot borrow session reset allowlist" \
+  "$(hook_input_at "env -S'git reset --hard'" "$TMPDIR/session")"
+assert_blocked "env --split-string cannot borrow session reset allowlist" \
+  "$(hook_input_at "env --split-string='git reset --hard'" "$TMPDIR/session")"
+assert_blocked "attached env -S Git head cannot hide global-option reset" \
+  "$(hook_input_at "env -Sgit --no-advice reset --hard" "$TMPDIR/session")"
+assert_blocked "attached env split-string Git head cannot hide global-option reset" \
+  "$(hook_input_at "env --split-string=git --no-advice reset --hard" "$TMPDIR/session")"
+assert_blocked "inline git-dir and worktree cannot borrow session allowlist" \
+  "$(hook_input_at "GIT_DIR=$TMPDIR/target/.git GIT_WORK_TREE=$TMPDIR/target git reset --hard" "$TMPDIR/session")"
+assert_blocked "env assignments cannot borrow session allowlist" \
+  "$(hook_input_at "env GIT_DIR=$TMPDIR/target/.git GIT_WORK_TREE=$TMPDIR/target git reset --hard" "$TMPDIR/session")"
+assert_blocked "quoted export git-dir cannot borrow session reset allowlist" \
+  "$(hook_input_at "export 'GIT_DIR=$TMPDIR/target/.git'; git reset --hard" "$TMPDIR/session")"
+assert_blocked "quoted env git-dir cannot borrow session reset allowlist" \
+  "$(hook_input_at "env 'GIT_DIR=$TMPDIR/target/.git' git reset --hard" "$TMPDIR/session")"
+assert_blocked "quoted env Git executable cannot hide hard reset" \
+  "$(hook_input_at "env 'git' reset --hard" "$TMPDIR/denied")"
+assert_blocked "double-quoted export git-dir cannot borrow session reset allowlist" \
+  "$(hook_input_at "export \"GIT_DIR=$TMPDIR/target/.git\"; git reset --hard" "$TMPDIR/session")"
+assert_blocked "double-quoted env git-dir cannot borrow session reset allowlist" \
+  "$(hook_input_at "env \"GIT_DIR=$TMPDIR/target/.git\" git reset --hard" "$TMPDIR/session")"
+assert_blocked "double-quoted env Git executable cannot hide hard reset" \
+  "$(hook_input_at 'env "git" reset --hard' "$TMPDIR/denied")"
+assert_blocked "direct quoted Git executable cannot hide hard reset" \
+  "$(hook_input_at "'git' reset --hard" "$TMPDIR/denied")"
+assert_blocked "command env quoted Git executable cannot hide hard reset" \
+  "$(hook_input_at "command env 'git' reset --hard" "$TMPDIR/denied")"
+assert_blocked "builtin export quoted git-dir redirects later target" \
+  "$(hook_input_at "builtin export 'GIT_DIR=$TMPDIR/target/.git'; git reset --hard" "$TMPDIR/session")"
+assert_blocked "quoted worktree assignment cannot borrow session allowlist" \
+  "$(hook_input_at "env 'GIT_WORK_TREE=$TMPDIR/target' git reset --hard" "$TMPDIR/session")"
+assert_blocked "quoted object directory cannot borrow session allowlist" \
+  "$(hook_input_at "env 'GIT_OBJECT_DIRECTORY=$TMPDIR/target/.git/objects' git reset --hard" "$TMPDIR/session")"
+assert_allowed "printed quoted git-dir text does not change target" \
+  "$(hook_input_at "echo 'GIT_DIR=$TMPDIR/target/.git'; git reset --hard" "$TMPDIR/session")"
+assert_allowed "quoted env Git status remains harmless" \
+  "$(hook_input_at "env 'git' status" "$TMPDIR/denied")"
+assert_blocked "quote-concatenated Git executable cannot hide hard reset" \
+  "$(hook_input_at "g'it' reset --hard" "$TMPDIR/denied")"
+assert_blocked "leading quoted Git fragment cannot hide hard reset" \
+  "$(hook_input_at "'g'it reset --hard" "$TMPDIR/denied")"
+assert_blocked "empty quote before Git executable cannot hide hard reset" \
+  "$(hook_input_at "''git reset --hard" "$TMPDIR/denied")"
+assert_blocked "empty quote inside Git executable cannot hide hard reset" \
+  "$(hook_input_at "g''it reset --hard" "$TMPDIR/denied")"
+assert_blocked "empty double quote inside Git executable cannot hide hard reset" \
+  "$(hook_input_at 'gi""t reset --hard' "$TMPDIR/denied")"
+assert_blocked "quoted hard-reset flag cannot hide destructive option" \
+  "$(hook_input_at "git reset '--hard'" "$TMPDIR/denied")"
+assert_blocked "quoted subcommand and flag cannot hide hard reset" \
+  "$(hook_input_at "git 'reset' '--hard'" "$TMPDIR/denied")"
+assert_blocked "quoted force-push flag cannot hide destructive option" \
+  "$(hook_input_at "git push '--force' origin feature" "$TMPDIR/denied")"
+assert_blocked "quoted clean flag cannot hide destructive option" \
+  "$(hook_input_at "git clean '-fd'" "$TMPDIR/denied")"
+assert_blocked "quoted no-verify flag cannot hide hook bypass" \
+  "$(hook_input_at "git commit '--no-verify' -m message" "$TMPDIR/denied")"
+assert_blocked "env quote-concatenated Git executable cannot hide hard reset" \
+  "$(hook_input_at "env g'it' reset --hard" "$TMPDIR/denied")"
+assert_blocked "runtime-selected Git executable cannot hide hard reset" \
+  "$(hook_input_at 'env "$GIT_BIN" reset --hard' "$TMPDIR/denied")"
+assert_blocked "direct runtime-selected Git executable cannot hide hard reset" \
+  "$(hook_input_at '"$GIT_BIN" reset --hard' "$TMPDIR/denied")"
+assert_blocked "quoted git-dir with spaces cannot borrow session allowlist" \
+  "$(hook_input_at "env 'GIT_DIR=$TMPDIR/target with spaces/.git' git reset --hard" "$TMPDIR/session")"
+assert_blocked "command export quoted git-dir redirects later target" \
+  "$(hook_input_at "command export 'GIT_DIR=$TMPDIR/target/.git'; git reset --hard" "$TMPDIR/session")"
+assert_allowed "printed quoted Git fragments do not execute" \
+  "$(hook_input_at "echo g'it' reset --hard" "$TMPDIR/denied")"
+assert_allowed "runtime-selected executable with safe arguments remains allowed" \
+  "$(hook_input_at 'env "$GIT_BIN" status' "$TMPDIR/denied")"
+assert_allowed "opaque non-Git executable remains allowed" \
+  "$(hook_input_at '"$VENV/bin/pytest" tests' "$TMPDIR/denied")"
+assert_allowed "embedded safe commit with Git global option remains allowed" \
+  "$(hook_input_at 'git -C '"$TMPDIR"'/denied commit -m "$(cat msg)"' "$TMPDIR/denied")"
+assert_blocked "runtime shell command cannot hide hard reset" \
+  "$(hook_input_at 'bash -c "$COMMAND"' "$TMPDIR/denied")"
+assert_blocked "runtime eval command cannot hide hard reset" \
+  "$(hook_input_at 'eval "$COMMAND"' "$TMPDIR/denied")"
+printf 'git status\n' > "$TMPDIR/denied/safe-script.sh"
+printf 'git reset --hard\n' > "$TMPDIR/denied/forbidden-script.sh"
+mkdir -p "$TMPDIR/env-chdir-target"
+cp "$TMPDIR/denied/forbidden-script.sh" "$TMPDIR/env-chdir-target/safe-script.sh"
+assert_blocked "env -C cannot inspect a script in the wrong directory" \
+  "$(hook_input_at "env -C $TMPDIR/env-chdir-target bash ./safe-script.sh" "$TMPDIR/denied")"
+assert_blocked "env attached -C cannot inspect a script in the wrong directory" \
+  "$(hook_input_at "env -C$TMPDIR/env-chdir-target bash ./safe-script.sh" "$TMPDIR/denied")"
+assert_blocked "env --chdir cannot inspect a script in the wrong directory" \
+  "$(hook_input_at "env --chdir $TMPDIR/env-chdir-target bash ./safe-script.sh" "$TMPDIR/denied")"
+assert_blocked "env --chdir= cannot inspect a script in the wrong directory" \
+  "$(hook_input_at "env --chdir=$TMPDIR/env-chdir-target bash ./safe-script.sh" "$TMPDIR/denied")"
+cp "$TMPDIR/denied/safe-script.sh" "$TMPDIR/denied/safe-script"
+cp "$TMPDIR/denied/forbidden-script.sh" "$TMPDIR/denied/forbidden-script"
+printf './forbidden-script.sh\n' > "$TMPDIR/denied/nested-script.sh"
+assert_allowed "script filename printed as data remains allowed" \
+  "$(hook_input_at 'echo missing.sh' "$TMPDIR/denied")"
+assert_allowed "script filename passed to Git add remains allowed" \
+  "$(hook_input_at 'git add missing.sh' "$TMPDIR/denied")"
+assert_allowed "shell script with safe Git remains allowed" \
+  "$(hook_input_at 'bash ./safe-script.sh' "$TMPDIR/denied")"
+assert_allowed "extensionless safe shell script remains allowed" \
+  "$(hook_input_at 'bash ./safe-script' "$TMPDIR/denied")"
+assert_allowed "direct safe script remains allowed" \
+  "$(hook_input_at './safe-script.sh' "$TMPDIR/denied")"
+assert_allowed "sourced safe script remains allowed" \
+  "$(hook_input_at 'source ./safe-script.sh' "$TMPDIR/denied")"
+assert_blocked "shell script cannot hide hard reset" \
+  "$(hook_input_at 'bash ./forbidden-script.sh' "$TMPDIR/denied")"
+assert_blocked "extensionless shell script cannot hide hard reset" \
+  "$(hook_input_at 'bash ./forbidden-script' "$TMPDIR/denied")"
+assert_blocked "interpreter -O argument cannot hide script" \
+  "$(hook_input_at 'bash -O extglob ./forbidden-script.sh' "$TMPDIR/denied")"
+assert_blocked "interpreter -o argument cannot hide script" \
+  "$(hook_input_at 'bash -o errexit ./forbidden-script.sh' "$TMPDIR/denied")"
+assert_blocked "sudo wrapper cannot hide script" \
+  "$(hook_input_at 'sudo ./forbidden-script.sh' "$TMPDIR/denied")"
+assert_blocked "sudo option argument cannot hide script" \
+  "$(hook_input_at 'sudo -u root ./forbidden-script.sh' "$TMPDIR/denied")"
+assert_blocked "sudo long option argument cannot hide script" \
+  "$(hook_input_at 'sudo --user root bash ./forbidden-script.sh' "$TMPDIR/denied")"
+assert_blocked "sudo directory option cannot hide script" \
+  "$(hook_input_at 'sudo -D . ./forbidden-script.sh' "$TMPDIR/denied")"
+assert_blocked "env option argument cannot hide script" \
+  "$(hook_input_at 'env -u UNUSED bash ./forbidden-script.sh' "$TMPDIR/denied")"
+assert_blocked "exec option argument cannot hide script" \
+  "$(hook_input_at 'exec -a shell bash ./forbidden-script.sh' "$TMPDIR/denied")"
+assert_blocked "command option cannot hide script" \
+  "$(hook_input_at 'command -p bash ./forbidden-script.sh' "$TMPDIR/denied")"
+assert_blocked "time wrapper cannot hide script" \
+  "$(hook_input_at 'time bash ./forbidden-script.sh' "$TMPDIR/denied")"
+assert_blocked "time flag and interpreter option cannot hide script" \
+  "$(hook_input_at 'time -p bash -O extglob ./forbidden-script.sh' "$TMPDIR/denied")"
+assert_blocked "nice wrapper cannot hide script" \
+  "$(hook_input_at 'nice -n 5 bash ./forbidden-script.sh' "$TMPDIR/denied")"
+assert_blocked "timeout wrapper cannot hide script" \
+  "$(hook_input_at 'timeout 10 bash ./forbidden-script.sh' "$TMPDIR/denied")"
+assert_blocked "stdbuf wrapper cannot hide script" \
+  "$(hook_input_at 'stdbuf -oL bash ./forbidden-script.sh' "$TMPDIR/denied")"
+assert_blocked "builtin source cannot hide script" \
+  "$(hook_input_at 'builtin source ./forbidden-script.sh' "$TMPDIR/denied")"
+assert_blocked "direct script cannot hide hard reset" \
+  "$(hook_input_at './forbidden-script.sh' "$TMPDIR/denied")"
+assert_blocked "sourced script cannot hide hard reset" \
+  "$(hook_input_at 'source ./forbidden-script.sh' "$TMPDIR/denied")"
+assert_blocked "script on a later line cannot hide hard reset" \
+  "$(hook_input_at $'echo safe\n./forbidden-script.sh' "$TMPDIR/denied")"
+assert_blocked "nested script cannot hide hard reset" \
+  "$(hook_input_at 'bash ./nested-script.sh' "$TMPDIR/denied")"
+assert_allowed "quoted here-doc body mentioning a script is literal data" \
+  "$(hook_input_at "cat <<'EOF'
+./forbidden-script.sh
+EOF" "$TMPDIR/denied")"
+
+# Runtime-selected Git operands and aliases are executable policy inputs, not
+# inert prose. These payloads are inspected by the hook; they are not executed.
+echo ""
+echo "Runtime-selected operands and Git aliases:"
+assert_blocked "runtime-selected Git verb cannot hide hard reset" \
+  "$(hook_input_at 'git "$VERB" --hard' "$TMPDIR/denied")"
+assert_blocked "quoted fragment cannot complete hard-reset verb" \
+  "$(hook_input_at 'git re"$PART"set --hard' "$TMPDIR/denied")"
+assert_blocked "quoted fragment cannot complete hard-reset flag" \
+  "$(hook_input_at 'git reset --ha"$PART"' "$TMPDIR/denied")"
+assert_blocked "quoted fragment cannot complete force-push flag" \
+  "$(hook_input_at 'git push --for"$PART" origin feature' "$TMPDIR/denied")"
+assert_blocked "quoted fragment cannot complete clean verb" \
+  "$(hook_input_at 'git cl"$PART"ean -f' "$TMPDIR/denied")"
+assert_blocked "quoted fragment cannot complete Git executable" \
+  "$(hook_input_at 'g"$PART"it reset --hard' "$TMPDIR/denied")"
+assert_blocked "quoted fragment cannot complete Git alias name" \
+  "$(hook_input_at 'git wi"$PART"pe' "$TMPDIR/denied")"
+assert_blocked "unquoted fragment cannot complete hard-reset verb" \
+  "$(hook_input_at 'git re${PART}set --hard' "$TMPDIR/denied")"
+assert_blocked "unquoted fragment cannot complete hard-reset flag" \
+  "$(hook_input_at 'git reset --ha$PART' "$TMPDIR/denied")"
+assert_blocked "unquoted Git verb cannot hide hard reset" \
+  "$(hook_input_at 'git $VERB --hard' "$TMPDIR/denied")"
+assert_blocked "braced Git verb cannot hide hard reset" \
+  "$(hook_input_at 'git ${VERB} --hard' "$TMPDIR/denied")"
+assert_blocked "command substitution cannot select a destructive Git verb" \
+  "$(hook_input_at 'git $(printf reset) --hard' "$TMPDIR/denied")"
+assert_blocked "runtime-selected reset mode cannot hide --hard" \
+  "$(hook_input_at 'git reset "$MODE"' "$TMPDIR/denied")"
+assert_blocked "unquoted reset mode cannot hide --hard" \
+  "$(hook_input_at 'git reset $MODE' "$TMPDIR/denied")"
+assert_blocked "runtime-selected push flag cannot hide --force" \
+  "$(hook_input_at 'git push "$FLAG" origin feature' "$TMPDIR/denied")"
+assert_blocked "unquoted push flag cannot hide --force" \
+  "$(hook_input_at 'git push $FLAG origin feature' "$TMPDIR/denied")"
+assert_blocked "runtime-selected push refspec cannot delete a branch" \
+  "$(hook_input_at 'git push origin "$REFSPEC"' "$TMPDIR/denied")"
+assert_blocked "runtime-selected clean flag cannot hide -f" \
+  "$(hook_input_at 'git clean "$FLAG"' "$TMPDIR/denied")"
+assert_blocked "unquoted clean flag cannot hide -f" \
+  "$(hook_input_at 'git clean $FLAG' "$TMPDIR/denied")"
+assert_blocked "runtime-selected commit option cannot hide --no-verify" \
+  "$(hook_input_at 'git commit "$OPTION" -m message' "$TMPDIR/denied")"
+assert_blocked "unquoted commit message may split into --no-verify" \
+  "$(hook_input_at 'git commit -m $MESSAGE' "$TMPDIR/denied")"
+assert_blocked "unquoted Git executable cannot hide hard reset" \
+  "$(hook_input_at '$GIT_BIN reset --hard' "$TMPDIR/denied")"
+assert_blocked "runtime Git global config cannot hide alias definition" \
+  "$(hook_input_at 'git -c $CONFIG injected' "$TMPDIR/denied")"
+assert_allowed "runtime-selected status path is read-only" \
+  "$(hook_input_at 'git status "$PATHSPEC"' "$TMPDIR/denied")"
+assert_allowed "unquoted status path remains read-only" \
+  "$(hook_input_at 'git status $PATHSPEC' "$TMPDIR/denied")"
+assert_allowed "runtime-selected commit message is data" \
+  "$(hook_input_at 'git commit -m "$MESSAGE"' "$TMPDIR/denied")"
+assert_allowed "escaped dollar in commit message is literal data" \
+  "$(hook_input_at 'git commit -m \$MESSAGE' "$TMPDIR/denied")"
+assert_allowed "literal Q in Git path remains data" \
+  "$(hook_input_at 'git status --short Q' "$TMPDIR/denied")"
+assert_allowed "single-quoted dollar in commit message is literal data" \
+  "$(hook_input_at "git commit -m '\$MESSAGE'" "$TMPDIR/denied")"
+assert_blocked "separate runtime commit argument may be --no-verify" \
+  "$(hook_input_at 'git commit -m git "$MESSAGE"' "$TMPDIR/denied")"
+assert_allowed "literal Git path after quoted commit message is data" \
+  "$(hook_input_at 'git commit -m "$MESSAGE" git' "$TMPDIR/denied")"
+assert_allowed "literal Git path in status is data" \
+  "$(hook_input_at 'git status --short git "$PATHSPEC"' "$TMPDIR/denied")"
+assert_allowed "literal Git path in add is data" \
+  "$(hook_input_at 'git add git "$PATHSPEC"' "$TMPDIR/denied")"
+assert_allowed "Git config assignment text in commit message is data" \
+  "$(hook_input_at 'git commit -m GIT_CONFIG_COUNT=1' "$TMPDIR/denied")"
+assert_allowed "Git config assignment text in status path is data" \
+  "$(hook_input_at 'git status GIT_CONFIG_COUNT=1' "$TMPDIR/denied")"
+assert_allowed "runtime-selected add path is not a guarded effect" \
+  "$(hook_input_at 'git add "$PATHSPEC"' "$TMPDIR/denied")"
+
+git -C "$TMPDIR/denied" config alias.wipe 'reset --hard'
+git -C "$TMPDIR/denied" config alias.a.b 'reset --hard'
+git -C "$TMPDIR/denied" config alias.shellwipe '!git reset --hard'
+git -C "$TMPDIR/denied" config alias.globalwipe '-c color.ui=false reset --hard'
+mkdir -p "$TMPDIR/prior-shell-config"
+git init -q "$TMPDIR/prior-shell-config"
+git -C "$TMPDIR/denied" config alias.status 'reset --hard'
+mkdir -p "$TMPDIR/alias-home" "$TMPDIR/alias-included" "$TMPDIR/alias-xdg" "$TMPDIR/alias-empty-home"
+git init -q "$TMPDIR/alias-included"
+git init -q "$TMPDIR/alias-target"
+git init -q "$TMPDIR/xdg-target"
+HOME="$TMPDIR/alias-home" git config --global alias.homewipe 'reset --hard'
+XDG_CONFIG_HOME="$TMPDIR/alias-xdg" HOME="$TMPDIR/alias-empty-home" \
+  git config --global alias.xdgwipe 'reset --hard'
+printf '[alias]\n  includedwipe = reset --hard\n' > "$TMPDIR/alias-include.cfg"
+git -C "$TMPDIR/alias-included" config include.path "$TMPDIR/alias-include.cfg"
+assert_blocked "repository Git alias cannot hide hard reset" \
+  "$(hook_input_at 'git wipe' "$TMPDIR/denied")"
+assert_blocked "dotted repository Git alias cannot hide hard reset" \
+  "$(hook_input_at 'git a.b' "$TMPDIR/denied")"
+assert_blocked "alias invocation with different case cannot hide hard reset" \
+  "$(hook_input_at 'git WIPE' "$TMPDIR/denied")"
+assert_blocked "shell wrapper cannot hide a configured Git alias" \
+  "$(hook_input_at "bash -c 'git wipe'" "$TMPDIR/denied")"
+assert_blocked "Git -C resolves aliases in its target repository" \
+  "$(hook_input_at "git -C $TMPDIR/denied wipe" "$TMPDIR/session")"
+assert_blocked "redirected Git directory cannot borrow alias lookup from session" \
+  "$(hook_input_at "GIT_DIR=$TMPDIR/denied/.git git wipe" "$TMPDIR/session")"
+assert_blocked "shell Git alias cannot hide hard reset" \
+  "$(hook_input_at 'git shellwipe' "$TMPDIR/denied")"
+assert_blocked "alias with Git globals cannot hide hard reset" \
+  "$(hook_input_at 'git globalwipe' "$TMPDIR/denied")"
+assert_blocked "inline Git alias cannot hide hard reset" \
+  "$(hook_input_at "git -c alias.inline='reset --hard' inline" "$TMPDIR/denied")"
+assert_blocked "quoted inline Git alias cannot hide hard reset" \
+  "$(hook_input_at "git -c 'alias.inline=reset --hard' inline" "$TMPDIR/denied")"
+HOME="$TMPDIR/alias-home" assert_blocked "global Git alias cannot hide hard reset" \
+  "$(hook_input_at 'git homewipe' "$TMPDIR/denied")"
+assert_blocked "wrapper HOME override cannot hide global Git alias" \
+  "$(hook_input_at "env HOME=$TMPDIR/alias-home git homewipe" "$TMPDIR/denied")"
+assert_blocked "prior HOME assignment cannot hide global Git alias" \
+  "$(hook_input_at "HOME=$TMPDIR/alias-home; git homewipe" "$TMPDIR/alias-target")"
+assert_blocked "prior XDG config assignment cannot hide global Git alias" \
+  "$(hook_input_at "XDG_CONFIG_HOME=$TMPDIR/alias-xdg HOME=$TMPDIR/alias-empty-home; git xdgwipe" "$TMPDIR/xdg-target")"
+assert_blocked "included Git alias cannot hide hard reset" \
+  "$(hook_input_at 'git includedwipe' "$TMPDIR/alias-included")"
+assert_blocked "runtime Git config cannot inject an alias" \
+  "$(hook_input_at 'GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=alias.injected GIT_CONFIG_VALUE_0="reset --hard" git injected' "$TMPDIR/denied")"
+assert_blocked "prior exported Git config cannot inject an alias" \
+  "$(hook_input_at 'export GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=alias.injected GIT_CONFIG_VALUE_0="reset --hard"; git injected' "$TMPDIR/denied")"
+assert_blocked "alias created earlier in the same payload cannot hide hard reset" \
+  "$(hook_input_at 'git config alias.runtimex reset; git runtimex --hard' "$TMPDIR/denied")"
+assert_blocked "alias created before a conditional call cannot hide hard reset" \
+  "$(hook_input_at 'git config alias.runtimex reset && git runtimex --hard' "$TMPDIR/denied")"
+assert_blocked "shell-created alias before a later call cannot hide hard reset" \
+  "$(hook_input_at "printf '[alias]\\n  wipe = reset --hard\\n' > .git/config; git wipe" "$TMPDIR/prior-shell-config")"
+assert_allowed "Git config followed by a built-in status command" \
+  "$(hook_input_at 'git config user.name Test; git status' "$TMPDIR/denied")"
+assert_allowed "Git alias cannot replace a built-in status command" \
+  "$(hook_input_at 'git status' "$TMPDIR/denied")"
+assert_allowed "printed alias declaration is data" \
+  "$(hook_input_at "printf '%s\\n' 'git -c alias.inline=reset --hard inline'" "$TMPDIR/denied")"
+assert_allowed "printed Git config assignment is data" \
+  "$(hook_input_at "printf '%s\\n' 'GIT_CONFIG_COUNT=1'; git status" "$TMPDIR/denied")"
+assert_blocked "inline worktree cannot borrow session allowlist" \
+  "$(hook_input_at "GIT_WORK_TREE=$TMPDIR/target git reset --hard" "$TMPDIR/session")"
+assert_blocked "exported worktree cannot borrow session allowlist" \
+  "$(hook_input_at "export GIT_WORK_TREE=$TMPDIR/target; git reset --hard" "$TMPDIR/session")"
+assert_blocked "prior worktree assignment cannot borrow session allowlist" \
+  "$(hook_input_at "GIT_WORK_TREE=$TMPDIR/target; export GIT_WORK_TREE; git reset --hard" "$TMPDIR/session")"
+assert_blocked "builtin export cannot redirect later Git target" \
+  "$(hook_input_at "builtin export GIT_DIR=$TMPDIR/target/.git; git reset --hard" "$TMPDIR/session")"
+assert_blocked "command export cannot redirect later Git target" \
+  "$(hook_input_at "command export GIT_DIR=$TMPDIR/target/.git; git reset --hard" "$TMPDIR/session")"
+assert_blocked "readonly cannot redirect later Git target" \
+  "$(hook_input_at "readonly GIT_DIR=$TMPDIR/target/.git; git reset --hard" "$TMPDIR/session")"
+assert_allowed "printed worktree text does not alter later Git target" \
+  "$(hook_input_at "echo GIT_WORK_TREE=$TMPDIR/target; git reset --hard" "$TMPDIR/session")"
+assert_blocked "nice cannot hide targeted hard reset" \
+  "$(hook_input_at "nice -n 10 git -C $TMPDIR/target reset --hard" "$TMPDIR/session")"
+assert_blocked "timeout cannot hide targeted hard reset" \
+  "$(hook_input_at "timeout 5 git -C $TMPDIR/target reset --hard" "$TMPDIR/session")"
+assert_blocked "sudo chdir cannot borrow session allowlist" \
+  "$(hook_input_at "sudo -D $TMPDIR/target git reset --hard" "$TMPDIR/session")"
+assert_blocked "sudo timeout cannot hide targeted hard reset" \
+  "$(hook_input_at "sudo -T 5 git -C $TMPDIR/target reset --hard" "$TMPDIR/session")"
+assert_blocked "env chdir cannot borrow session allowlist" \
+  "$(hook_input_at "env -C $TMPDIR/target git reset --hard" "$TMPDIR/session")"
+assert_blocked "caffeinate cannot hide targeted hard reset" \
+  "$(hook_input_at "caffeinate -i git -C $TMPDIR/target reset --hard" "$TMPDIR/session")"
+assert_blocked "stdbuf cannot hide targeted hard reset" \
+  "$(hook_input_at "stdbuf -oL git -C $TMPDIR/target reset --hard" "$TMPDIR/session")"
+
+assert_blocked "git -C cannot bypass reset guard or borrow session allowlist" \
+  "$(hook_input_at "git -C $TMPDIR/target reset --hard" "$TMPDIR/session")"
+GIT_WORK_TREE="$TMPDIR/session" assert_blocked "inherited worktree cannot borrow session allowlist" \
+  "$(hook_input_at "git -C $TMPDIR/target reset --hard" "$TMPDIR/session")"
+GIT_DIR="$TMPDIR/session/.git" GIT_WORK_TREE="$TMPDIR/session" \
+  assert_blocked "inherited git-dir and worktree cannot borrow session allowlist" \
+  "$(hook_input_at "git -C $TMPDIR/target reset --hard" "$TMPDIR/session")"
+assert_blocked "global -c before -C still uses target policy" \
+  "$(hook_input_at "git -c color.ui=false -C $TMPDIR/target reset --hard" "$TMPDIR/session")"
+assert_blocked "attached -C path cannot borrow session allowlist" \
+  "$(hook_input_at "git -C$TMPDIR/target reset --hard" "$TMPDIR/session")"
+assert_blocked "alternate --git-dir path cannot borrow session allowlist" \
+  "$(hook_input_at "git --git-dir=$TMPDIR/target/.git reset --hard" "$TMPDIR/session")"
+assert_blocked "repeated -C cannot borrow an intermediate allowlist" \
+  "$(hook_input_at "git -C $TMPDIR/session -C ../target reset --hard" "$TMPDIR/session")"
+assert_blocked "git global -c cannot bypass reset guard" \
+  "$(hook_input_at 'git -c color.ui=false reset --hard' "$TMPDIR/target")"
+assert_blocked "git --no-pager cannot bypass reset guard" \
+  "$(hook_input_at 'git --no-pager reset --hard' "$TMPDIR/target")"
+assert_blocked "git --no-advice cannot bypass reset guard" \
+  "$(hook_input_at 'git --no-advice reset --hard' "$TMPDIR/target")"
+assert_blocked "cd target cannot borrow session allowlist" \
+  "$(hook_input_at "cd $TMPDIR/target && git reset --hard" "$TMPDIR/session")"
+assert_blocked "quoted -C target with spaces is enforced" \
+  "$(hook_input_at "git -C '$TMPDIR/target with spaces' reset --hard" "$TMPDIR/session")"
+assert_blocked "global option text in a quote cannot hide a later reset" \
+  "$(hook_input_at 'echo "git -c x"; git reset --hard' "$TMPDIR/denied")"
+assert_blocked "attached -C text in a quote cannot hide a later reset" \
+  "$(hook_input_at 'echo "git -Cfoo"; git reset --hard' "$TMPDIR/denied")"
+assert_blocked "attached -C after another global option cannot borrow session policy" \
+  "$(hook_input_at "git --no-pager -C$TMPDIR/target reset --hard" "$TMPDIR/session")"
+assert_blocked "attached -c cannot hide reset" \
+  "$(hook_input_at 'git -ccolor.ui=false reset --hard' "$TMPDIR/denied")"
+
+echo "allow: reset --hard" > "$TMPDIR/target/.git-safe"
+mkdir -p "$TMPDIR/session/target"
+git init -q "$TMPDIR/session/target"
+assert_blocked "repeated -C cannot borrow independent allowlists" \
+  "$(hook_input_at "git -C session -C target reset --hard" "$TMPDIR")"
+assert_allowed "target's own allowlist permits git -C reset" \
+  "$(hook_input_at "git -C $TMPDIR/target reset --hard" "$TMPDIR/session")"
+assert_allowed "target's own allowlist permits cd then reset" \
+  "$(hook_input_at "cd $TMPDIR/target && git reset --hard" "$TMPDIR/session")"
+assert_blocked "later cd cannot authorize an earlier reset" \
+  "$(hook_input_at "git reset --hard; cd $TMPDIR/target" "$TMPDIR/denied")"
+assert_blocked "echo -C cannot authorize a reset" \
+  "$(hook_input_at "echo -C $TMPDIR/target; git reset --hard" "$TMPDIR/denied")"
+assert_blocked "safe targeted Git command cannot authorize later implicit reset" \
+  "$(hook_input_at "git -C $TMPDIR/target status; git reset --hard" "$TMPDIR/denied")"
+assert_blocked "failed cd fallback cannot borrow target policy" \
+  "$(hook_input_at "cd $TMPDIR/target || git reset --hard" "$TMPDIR/denied")"
+assert_allowed "separate authorized -C commands are not a repeated -C chain" \
+  "$(hook_input_at "git -C $TMPDIR/target reset --hard; git -C $TMPDIR/target reset --hard" "$TMPDIR/denied")"
+mkdir -p "$TMPDIR/session/child" "$TMPDIR/target/child"
+git init -q "$TMPDIR/session/child"
+git init -q "$TMPDIR/target/child"
+echo "allow: reset --hard" > "$TMPDIR/session/child/.git-safe"
+assert_blocked "relative -C after cd cannot borrow the wrong child policy" \
+  "$(hook_input_at "cd $TMPDIR/target && git -C child reset --hard" "$TMPDIR/session")"
+assert_blocked "second relative cd cannot borrow the wrong child policy" \
+  "$(hook_input_at "cd $TMPDIR/target && cd child && git reset --hard" "$TMPDIR/session")"
+assert_allowed "safe git -C status remains allowed" \
+  "$(hook_input_at "git -C $TMPDIR/target status" "$TMPDIR/session")"
 
 # --- Results ---
 echo ""

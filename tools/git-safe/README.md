@@ -44,6 +44,12 @@ allow: push --force
 allow: reset --hard
 ```
 
+The hook reads this file from the repository targeted by the command. For
+example, `git -C other-repo reset --hard` uses `other-repo/.git-safe`, not the
+session's starting repository. A command touching multiple repositories needs
+permission from each. If an explicit target cannot be resolved, the destructive
+operation is blocked. `GIT_SAFE_CONFIG` remains an explicit override.
+
 ## Environment variables
 
 ```bash
@@ -54,9 +60,42 @@ GIT_SAFE_CONFIG=path  # Custom config file location
 
 ## How it works
 
-git-safe is a [PreToolUse hook](https://docs.anthropic.com/en/docs/claude-code/hooks) that inspects Bash commands before execution. It uses pattern matching to detect destructive git operations and hard-blocks them with a human-readable reason on `stderr` plus exit code `2`, which is the most reliable deny path across Claude Code surfaces today.
+git-safe is a [PreToolUse hook](https://docs.anthropic.com/en/docs/claude-code/hooks) that inspects Bash commands before execution. It normalizes Git global options such as `-C` before matching destructive subcommands, then blocks with a human-readable reason on `stderr` plus exit code `2`.
 
-Safe operations (`git status`, `git commit`, `git push`, `git branch -d`, etc.) pass through without interference.
+Executable shell strings (`eval`, shell `-c`, `env -S`, and command substitutions) are
+checked too, including substitutions in unquoted here-doc bodies. Literal
+examples in single-quoted arguments and quoted here-doc bodies remain inert.
+Literal shell scripts (`bash script.sh`, `./script.sh`, and `source script.sh`)
+are read and checked before execution; they are blocked only when their content
+contains a guarded Git operation. Runtime-selected shell programs remain denied
+because their content cannot be inspected safely before execution.
+Shell quotes around literal executable names, Git options, and Git environment
+assignments are removed for inspection. If an executable is selected by an
+expansion, destructive Git-shaped arguments are checked with an unresolved
+target; a shell-scanner failure denies the tool call.
+Runtime-selected Git subcommands and arguments that may become guarded flags
+or refspecs are denied until their values are known, including values joined
+to literal verb or flag fragments. Unquoted expansions can
+split into multiple arguments, so even an unquoted commit message is treated
+as uncertain. Read-only commands, `git add` paths, and quoted `git commit -m`
+message text remain allowed. Configured
+Git aliases are denied because they can expand to another Git command or shell
+code; inline alias configuration and runtime `GIT_CONFIG_*` overrides are
+also denied. If an earlier command in the same payload may change Git
+configuration, later non-built-in Git commands are denied until the new
+configuration can be inspected.
+Repeated `-C` targets are treated as ambiguous and require an
+explicit `GIT_SAFE_CONFIG` override for a guarded operation.
+Inherited, inline, or earlier exported `GIT_DIR`, `GIT_WORK_TREE`, or
+`GIT_OBJECT_DIRECTORY` make the target ambiguous, so repository-local
+allowlists are not applied. The same applies to wrapper options that change
+the working directory, such as `sudo -D` and `env -C`. Options to `nice`,
+`timeout`, `caffeinate`, and `stdbuf` are skipped before identifying the Git
+command they run. Split strings passed to `env -S` are treated conservatively:
+a literal mention of a destructive Git command inside such a string may be
+blocked even when its intended executable only prints that text.
+
+Literal safe operations (`git status`, `git commit`, `git push`, `git branch -d`, etc.) pass through.
 
 ## Part of Boucle
 

@@ -59,27 +59,146 @@ if [ -z "$COMMAND" ]; then
   exit 0
 fi
 
+PAYLOAD_CWD=$(echo "$INPUT" | jq -r '.cwd // empty')
+[ -n "$PAYLOAD_CWD" ] || PAYLOAD_CWD="$PWD"
 log() {
   if [ "${GIT_SAFE_LOG:-0}" = "1" ]; then
     echo "[git-safe] $*" >&2
   fi
 }
 
-# Print command segments split on unquoted shell separators. Quoted text and
-# here-doc bodies are replaced with spaces so commit messages, grep filters, and
-# JSON payloads that mention destructive git commands are not treated as
-# executable git operations.
+# Print command segments split on unquoted shell separators. Most quoted
+# arguments become opaque markers; simple literal words, options, and Git
+# environment assignments remain visible after quote removal. Here-docs become
+# spaces, and substitutions in unquoted bodies still emit an execution marker.
+# A quoted -C directory still occupies one argument when options are normalized.
 command_segments() {
   awk '
-    function reset_heredoc(delim) {
-      heredoc = delim
+    function quoted_token(word, name) {
+      if (word == "") return ""
+      if (word ~ /^GIT_(DIR|WORK_TREE|OBJECT_DIRECTORY)=/) {
+        name = word
+        sub(/=.*/, "", name)
+        return name "=__GIT_SAFE_QUOTED__"
+      }
+      # Shell also removes quotes around simple options and word fragments.
+      # Keep shell syntax and whitespace opaque.
+      if (word ~ /^[-A-Za-z0-9_.\/=:+@]+$/) {
+        return word
+      }
+      return "__GIT_SAFE_OPAQUE_Q__"
     }
 
-    function maybe_heredoc(line,    i, c, n, q, delim) {
+    function reset_heredoc(delim, quoted) {
+      heredoc = delim
+      heredoc_quoted = quoted
+    }
+
+    function comment_starts(line, pos,    i, c, sq, dq, esc, boundary) {
+      boundary = 1
+      for (i = 1; i < pos; i++) {
+        c = substr(line, i, 1)
+        if (sq) {
+          if (c == "'\''") sq = 0
+          boundary = 0
+          continue
+        }
+        if (esc) {
+          esc = 0
+          boundary = 0
+          continue
+        }
+        if (c == "\\") {
+          esc = 1
+          boundary = 0
+          continue
+        }
+        if (c == "'\''" && !dq) {
+          sq = 1
+          boundary = 0
+          continue
+        }
+        if (c == "\"") {
+          dq = !dq
+          boundary = 0
+          continue
+        }
+        if (dq) {
+          boundary = 0
+          continue
+        }
+        boundary = c ~ /[ \t;&|<>]/
+      }
+      return !sq && !dq && !esc && boundary
+    }
+
+    function line_continues(line,    i, c, sq, dq, esc) {
+      sq = 0
+      dq = 0
+      esc = 0
+      for (i = 1; i <= length(line); i++) {
+        c = substr(line, i, 1)
+        if (sq) {
+          if (c == "'\''") sq = 0
+          continue
+        }
+        if (esc) {
+          esc = 0
+          continue
+        }
+        if (c == "\\") {
+          esc = 1
+          continue
+        }
+        if (c == "\"" && !sq) {
+          dq = !dq
+          continue
+        }
+        if (c == "'\''" && !dq) {
+          sq = 1
+          continue
+        }
+        if (c == "#" && !dq && comment_starts(line, i)) {
+          return 0
+        }
+      }
+      return esc && !sq
+    }
+
+    function maybe_heredoc(line,    i, c, n, q, delim, quoted, sq, dq, esc) {
+      sq = 0
+      dq = 0
+      esc = 0
       for (i = 1; i <= length(line); i++) {
         c = substr(line, i, 1)
         n = substr(line, i + 1, 1)
+        if (esc) {
+          esc = 0
+          continue
+        }
+        if (c == "\\" && !sq) {
+          esc = 1
+          continue
+        }
+        if (c == "'\''" && !dq) {
+          sq = !sq
+          continue
+        }
+        if (c == "\"" && !sq) {
+          dq = !dq
+          continue
+        }
+        if (sq || dq) {
+          continue
+        }
+        if (c == "#" && comment_starts(line, i)) {
+          return
+        }
         if (c == "<" && n == "<") {
+          if (substr(line, i + 2, 1) == "<") {
+            i += 2
+            continue
+          }
           i += 2
           if (substr(line, i, 1) == "-") {
             i++
@@ -87,22 +206,38 @@ command_segments() {
           while (substr(line, i, 1) ~ /[ \t]/) {
             i++
           }
-          q = substr(line, i, 1)
+          q = ""
           delim = ""
-          if (q == "\"" || q == "'\''") {
+          quoted = 0
+          esc = 0
+          while (i <= length(line)) {
+            c = substr(line, i, 1)
+            if (esc) {
+              delim = delim c
+              esc = 0
+            } else if (c == "\\" && q != "'\''") {
+              n = substr(line, i + 1, 1)
+              if (q == "\"" && n != "$" && n != "`" &&
+                  n != "\"" && n != "\\") {
+                delim = delim c
+              } else {
+                quoted = 1
+                esc = 1
+              }
+            } else if (q != "") {
+              if (c == q) q = ""; else delim = delim c
+            } else if (c == "\"" || c == "'\''") {
+              quoted = 1
+              q = c
+            } else if (c ~ /[ \t;&|<>]/) {
+              break
+            } else {
+              delim = delim c
+            }
             i++
-            while (i <= length(line) && substr(line, i, 1) != q) {
-              delim = delim substr(line, i, 1)
-              i++
-            }
-          } else {
-            while (i <= length(line) && substr(line, i, 1) !~ /[ \t;&|]/) {
-              delim = delim substr(line, i, 1)
-              i++
-            }
           }
-          if (delim != "") {
-            reset_heredoc(delim)
+          if (delim != "" && q == "" && !esc) {
+            reset_heredoc(delim, quoted)
             return
           }
         }
@@ -113,12 +248,45 @@ command_segments() {
       if (heredoc != "") {
         if ($0 == heredoc) {
           heredoc = ""
+          heredoc_quoted = 0
+          print ""
+          next
+        }
+        if (!heredoc_quoted) {
+          esc = 0
+          for (i = 1; i <= length($0); i++) {
+            c = substr($0, i, 1)
+            n = substr($0, i + 1, 1)
+            if (esc) {
+              esc = 0
+              continue
+            }
+            if (c == "\\") {
+              esc = 1
+              continue
+            }
+            if (c == "`" || (c == "$" && n == "(")) {
+              print "__GIT_SAFE_EMBEDDED__"
+              break
+            }
+          }
         }
         print ""
         next
       }
 
+      # Only Bash continuations in executable text join physical lines.
+      # A backslash in a comment, a single quote, or a here-doc body is data.
+      logical = $0
+      while (line_continues(logical)) {
+        logical = substr(logical, 1, length(logical) - 1)
+        if ((getline continuation) <= 0) break
+        logical = logical continuation
+      }
+      $0 = logical
+
       out = ""
+      embedded = 0
       sq = 0
       dq = 0
       esc = 0
@@ -127,7 +295,13 @@ command_segments() {
         n = substr($0, i + 1, 1)
 
         if (esc) {
-          out = out ((sq || dq) ? " " : c)
+          if (sq || dq) {
+            quote_text = quote_text "\\" c
+            out = out " "
+          } else {
+            # Backslash-escaped dollars and backticks are literal shell data.
+            out = out ((c == "$" || c == "`") ? "__GIT_SAFE_ESCAPED__" : c)
+          }
           esc = 0
           continue
         }
@@ -139,20 +313,46 @@ command_segments() {
         }
 
         if (c == "'\''" && !dq) {
-          sq = !sq
-          out = out " "
+          if (sq) {
+            sq = 0
+            out = substr(out, 1, quote_start) quoted_token(quote_text)
+          } else {
+            sq = 1
+            quote_start = length(out)
+            quote_text = ""
+            out = out "__GIT_SAFE_OPAQUE_Q__"
+          }
           continue
         }
 
         if (c == "\"" && !sq) {
-          dq = !dq
+          if (dq) {
+            dq = 0
+            out = substr(out, 1, quote_start) quoted_token(quote_text)
+          } else {
+            dq = 1
+            quote_start = length(out)
+            quote_text = ""
+            out = out "__GIT_SAFE_OPAQUE_Q__"
+          }
+          continue
+        }
+
+        # Substitutions execute in unquoted and double-quoted text, but not
+        # inside single quotes.  Here-doc bodies are skipped above.
+        if (!sq && (c == "`" || (c == "$" && n == "("))) {
+          embedded = 1
+        }
+
+        if (sq || dq) {
+          quote_text = quote_text c
           out = out " "
           continue
         }
 
-        if (sq || dq) {
-          out = out " "
-          continue
+        # A shell comment starts at a word boundary; its text is not executed.
+        if (c == "#" && comment_starts($0, i)) {
+          break
         }
 
         if (c == ";" || c == "|") {
@@ -174,6 +374,9 @@ command_segments() {
         out = out c
       }
       print out
+      if (embedded) {
+        print "__GIT_SAFE_EMBEDDED__"
+      }
       maybe_heredoc($0)
     }
   ' <<< "$COMMAND"
@@ -190,43 +393,586 @@ is_assignment_token() {
   [[ "$1" =~ ^[A-Za-z_][A-Za-z0-9_]*= ]]
 }
 
+# A prior shell assignment or export can redirect a later Git command in the
+# same Bash tool call. Text printed by a command such as echo is not an export.
+segment_sets_git_env() {
+  local words=() token i=0
+  read -r -a words <<< "$1"
+  [ ${#words[@]} -gt 0 ] || return 1
+  while [ $i -lt ${#words[@]} ]; do
+    case "${words[$i]}" in
+      builtin) i=$((i + 1)) ;;
+      command)
+        i=$((i + 1))
+        while [ $i -lt ${#words[@]} ]; do
+          case "${words[$i]}" in
+            -p|--) i=$((i + 1)) ;;
+            *) break ;;
+          esac
+        done
+        ;;
+      *) break ;;
+    esac
+  done
+  [ $i -lt ${#words[@]} ] || return 1
+  case "${words[$i]}" in
+    export|declare|typeset|readonly|local) ;;
+    *) is_assignment_token "${words[$i]}" || return 1 ;;
+  esac
+  for token in "${words[@]}"; do
+    case "$token" in
+      GIT_DIR=*|GIT_WORK_TREE=*|GIT_OBJECT_DIRECTORY=*) return 0 ;;
+    esac
+  done
+  return 1
+}
+
+segment_sets_git_config() {
+  local words=() token i=0
+  read -r -a words <<< "$1"
+  [ ${#words[@]} -gt 0 ] || return 1
+  while [ $i -lt ${#words[@]} ]; do
+    case "${words[$i]}" in
+      builtin|command) i=$((i + 1)) ;;
+      *) break ;;
+    esac
+  done
+  [ $i -lt ${#words[@]} ] || return 1
+  case "${words[$i]}" in
+    export|declare|typeset|readonly|local) ;;
+    *) is_assignment_token "${words[$i]}" || return 1 ;;
+  esac
+  for token in "${words[@]}"; do
+    case "$token" in GIT_CONFIG_*=*) return 0 ;; esac
+  done
+  return 1
+}
+
+# Keep a marker when a shell word concatenates an expansion with verb or flag
+# fragments, so the complete runtime argv cannot be mistaken for a literal.
+is_opaque_word() {
+  case "$1" in
+    *__GIT_SAFE_OPAQUE_Q__*|*__GIT_SAFE_OPAQUE_U__*) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
 is_git_command_segment() {
   local segment="$1"
   local words=()
   local i=0
   local token=""
+  local base=""
 
+  CURRENT_OPAQUE_EXEC=0
   read -r -a words <<< "$segment"
   [ ${#words[@]} -gt 0 ] || return 1
 
   while [ $i -lt ${#words[@]} ]; do
     token="${words[$i]}"
-    if [ "$token" = "env" ] || [ "$token" = "command" ] || [ "$token" = "exec" ]; then
-      i=$((i + 1))
-      continue
-    fi
     if is_assignment_token "$token"; then
       i=$((i + 1))
       continue
     fi
-    break
+    base="${token##*/}"
+    case "$base" in
+      env)
+        i=$((i + 1))
+        while [ $i -lt ${#words[@]} ]; do
+          token="${words[$i]}"
+          case "$token" in
+            -S|--split-string|-S?*|--split-string=*)
+              # env -S splits a string into an executable and its arguments.
+              # The quoted string is opaque to the outer segment scanner.
+              EMBEDDED_SHELL=1
+              i=$((i + 2)) ;;
+            -C|--chdir) WRAPPER_CWD=1; i=$((i + 2)) ;;
+            -C?*|--chdir=*) WRAPPER_CWD=1; i=$((i + 1)) ;;
+            -u|--unset) i=$((i + 2)) ;;
+            -i|--ignore-environment|-0|--null|--|-u?*|--unset=*)
+              i=$((i + 1)) ;;
+            -*) i=$((i + 1)) ;;
+            *) if is_assignment_token "$token"; then i=$((i + 1)); else break; fi ;;
+          esac
+        done
+        ;;
+      command)
+        i=$((i + 1))
+        while [ $i -lt ${#words[@]} ]; do
+          case "${words[$i]}" in
+            -p|--) i=$((i + 1)) ;;
+            -v|-V) return 1 ;;
+            *) break ;;
+          esac
+        done
+        ;;
+      sudo)
+        i=$((i + 1))
+        while [ $i -lt ${#words[@]} ]; do
+          token="${words[$i]}"
+          case "$token" in
+            -D|--chdir|-R|--chroot)
+              WRAPPER_CWD=1; i=$((i + 2)) ;;
+            -D?*|--chdir=*|-R?*|--chroot=*)
+              WRAPPER_CWD=1; i=$((i + 1)) ;;
+            -u|--user|-g|--group|-h|--host|-p|--prompt|-C|--close-from|-r|--role|-t|--type|-T|--command-timeout|-U|--other-user)
+              i=$((i + 2)) ;;
+            -u?*|--user=*|-g?*|--group=*|-n|-E|-H|-S|-b|-P|-A|--)
+              i=$((i + 1)) ;;
+            -*) i=$((i + 1)) ;;
+            *) break ;;
+          esac
+        done
+        ;;
+      time)
+        i=$((i + 1))
+        while [ $i -lt ${#words[@]} ]; do
+          case "${words[$i]}" in
+            -o|--output|-f|--format) i=$((i + 2)) ;;
+            -p|--portability|--|-l|-v|-a) i=$((i + 1)) ;;
+            *) break ;;
+          esac
+        done
+        ;;
+      nice)
+        i=$((i + 1))
+        while [ $i -lt ${#words[@]} ]; do
+          case "${words[$i]}" in
+            -n|--adjustment) i=$((i + 2)) ;;
+            -n?*|--adjustment=*|-[0-9]*) i=$((i + 1)) ;;
+            *) break ;;
+          esac
+        done
+        ;;
+      timeout)
+        i=$((i + 1))
+        while [ $i -lt ${#words[@]} ]; do
+          case "${words[$i]}" in
+            -s|--signal|-k|--kill-after) i=$((i + 2)) ;;
+            -s?*|--signal=*|-k?*|--kill-after=*|--foreground|--preserve-status|--)
+              i=$((i + 1)) ;;
+            -*) i=$((i + 1)) ;;
+            *) break ;;
+          esac
+        done
+        i=$((i + 1)) # duration
+        ;;
+      caffeinate)
+        i=$((i + 1))
+        while [ $i -lt ${#words[@]} ]; do
+          case "${words[$i]}" in
+            -t|-w) i=$((i + 2)) ;;
+            -*) i=$((i + 1)) ;;
+            *) break ;;
+          esac
+        done
+        ;;
+      stdbuf)
+        i=$((i + 1))
+        while [ $i -lt ${#words[@]} ]; do
+          case "${words[$i]}" in
+            -i|-o|-e) i=$((i + 2)) ;;
+            -*) i=$((i + 1)) ;;
+            *) break ;;
+          esac
+        done
+        ;;
+      exec)
+        i=$((i + 1))
+        while [ $i -lt ${#words[@]} ]; do
+          case "${words[$i]}" in
+            -a) i=$((i + 2)) ;;
+            -c|-l|--) i=$((i + 1)) ;;
+            *) break ;;
+          esac
+        done
+        ;;
+      nohup) i=$((i + 1)) ;;
+      *) break ;;
+    esac
   done
 
   [ $i -lt ${#words[@]} ] || return 1
+  if is_opaque_word "${words[$i]}"; then
+    # An expansion can select git at runtime. Match destructive Git arguments
+    # under an unresolved target instead of treating the call as non-Git.
+    OPAQUE_EXEC=1
+    CURRENT_OPAQUE_EXEC=1
+    GIT_CANDIDATE_INDEX=$i
+    return 0
+  fi
   is_git_binary_token "${words[$i]}"
 }
 
-GIT_COMMANDS=""
-while IFS= read -r segment; do
-  if is_git_command_segment "$segment"; then
-    if [ -z "$GIT_COMMANDS" ]; then
-      GIT_COMMANDS="$segment"
+is_embedded_shell_segment() {
+  local segment="$1" words=() i=0 j=0 token option
+  read -r -a words <<< "$segment"
+  [ ${#words[@]} -gt 0 ] || return 1
+
+  while [ $i -lt ${#words[@]} ]; do
+    token="${words[$i]}"
+    if [ "$token" = "env" ] || [ "$token" = "command" ] || [ "$token" = "exec" ] ||
+       [ "$token" = "sudo" ] || [ "$token" = "time" ] || [ "$token" = "nohup" ] ||
+       is_assignment_token "$token"; then
+      i=$((i + 1))
     else
-      GIT_COMMANDS="$GIT_COMMANDS
-$segment"
+      break
+    fi
+  done
+  [ $i -lt ${#words[@]} ] || return 1
+  token="${words[$i]##*/}"
+  [ "$token" = "eval" ] && return 0
+
+  # Wrappers such as `env -i`, `sudo -u root`, and `time -p` can put the
+  # shell beyond the first executable token.  The segment has already had
+  # quoted arguments scrubbed, so scan its remaining executable words.
+  for ((i = 0; i < ${#words[@]}; i++)); do
+    token="${words[$i]##*/}"
+    case "$token" in bash|sh|zsh|dash|ksh) ;; *) continue ;; esac
+    for ((j = i + 1; j < ${#words[@]}; j++)); do
+      option="${words[$j]}"
+      case "$option" in
+        -O|-o) j=$((j + 1)); continue ;;
+      esac
+      if [[ "$option" =~ ^-[a-zA-Z]*c[a-zA-Z]*$ ]]; then
+        return 0
+      fi
+      case "$option" in
+        --) break ;;
+        -*) ;;
+        *) break ;;
+      esac
+    done
+  done
+  return 1
+}
+
+# Git accepts global options between `git` and the subcommand.  Match against
+# each quote-scrubbed executable segment after removing those options, or
+# `git -C dir reset --hard` escapes every `git reset` rule below.  Never rewrite
+# the raw shell command before quote parsing: that can consume a closing quote
+# in harmless prose and hide a later real Git command.
+strip_git_globals() {
+  local command="$1" words=() output=() i=0 token
+  read -r -a words <<< "$command"
+  while [ $i -lt ${#words[@]} ]; do
+    token="${words[$i]}"
+    # env -S accepts the executable attached to its option. Expose a literal
+    # Git head here so its global options are normalized like a direct call.
+    case "$token" in
+      -S?*) candidate="${token#-S}" ;;
+      --split-string=*) candidate="${token#--split-string=}" ;;
+      *) candidate="" ;;
+    esac
+    if [ -n "$candidate" ] && is_git_binary_token "$candidate"; then
+      token="git"
+    fi
+    output+=("$token")
+    i=$((i + 1))
+    if ! is_git_binary_token "$token"; then
+      continue
+    fi
+    while [ $i -lt ${#words[@]} ]; do
+      token="${words[$i]}"
+      case "$token" in
+        -C|-c|--git-dir|--work-tree|--namespace|--config-env|--super-prefix)
+          i=$((i + 2)) ;;
+        -C?*|-c?*|--git-dir=*|--work-tree=*|--namespace=*|--exec-path=*|--config-env=*|--super-prefix=*|-*)
+          i=$((i + 1)) ;;
+        *) break ;;
+      esac
+    done
+  done
+  [ ${#output[@]} -gt 0 ] || return 0
+  printf '%s ' "${output[@]}" | sed 's/ $//'
+}
+
+# The shell expands unquoted variables and substitutions before Git receives
+# argv. Keep assignment names for target/config checks, but mark any unknown
+# value as an opaque marker. Unlike quoted words, unquoted values may split.
+mark_opaque_expansions() {
+  local words=() output=() token
+  if [ -z "${1//[[:space:]]/}" ]; then
+    printf '\n'
+    return 0
+  fi
+  read -r -a words <<< "$1"
+  for token in "${words[@]}"; do
+    case "$token" in
+      *'$'*|*'`'*)
+        if is_assignment_token "$token"; then
+          output+=("${token%%=*}=__GIT_SAFE_OPAQUE_U__")
+        else
+          output+=("__GIT_SAFE_OPAQUE_U__")
+        fi ;;
+      *) output+=("$token") ;;
+    esac
+  done
+  printf '%s\n' "${output[*]}"
+}
+
+mark_opaque_segments() {
+  local segment
+  while IFS= read -r segment; do
+    mark_opaque_expansions "$segment"
+  done <<< "$1"
+}
+
+append_literal_script_contents() {
+  local segments="$1" depth="${2:-0}" segment words=() token path script_path script_body nested_segments seen i interpreter
+  [ "$depth" -lt 16 ] || return 1
+  while IFS= read -r segment; do
+    read -r -a words <<< "$segment"
+    i=0
+    while [ $i -lt ${#words[@]} ]; do
+      token="${words[$i]}"
+      if is_assignment_token "$token"; then i=$((i + 1)); continue; fi
+      case "$token" in
+        env)
+          i=$((i + 1))
+          while [ $i -lt ${#words[@]} ]; do
+            case "${words[$i]}" in
+              -u|--unset) i=$((i + 2)) ;;
+              -C|--chdir|-C?*|--chdir=*) return 1 ;;
+              -i|--ignore-environment|-0|--null|--unset=*) i=$((i + 1)) ;;
+              --) i=$((i + 1)); break ;;
+              -*) return 1 ;;
+              *=*) i=$((i + 1)) ;;
+              *) break ;;
+            esac
+          done
+          continue ;;
+        command|builtin)
+          i=$((i + 1))
+          while [ $i -lt ${#words[@]} ]; do
+            case "${words[$i]}" in
+              -p|--) i=$((i + 1)) ;;
+              -*) return 1 ;;
+              *) break ;;
+            esac
+          done
+          continue ;;
+        exec)
+          i=$((i + 1))
+          while [ $i -lt ${#words[@]} ]; do
+            case "${words[$i]}" in
+              -a) i=$((i + 2)) ;;
+              -c|-l|--) i=$((i + 1)) ;;
+              -*) return 1 ;;
+              *) break ;;
+            esac
+          done
+          continue ;;
+        nohup) i=$((i + 1)); continue ;;
+        sudo|time|nice|timeout|stdbuf|caffeinate)
+          i=$((i + 1))
+          while [ $i -lt ${#words[@]} ]; do
+            case "${words[$i]}" in
+              --) i=$((i + 1)); break ;;
+              -u|-g|-h|-C|-r|-t|-D)
+                [ "$token" = sudo ] || return 1
+                i=$((i + 2)) ;;
+              --user|--group|--host|--chdir|--role|--type)
+                [ "$token" = sudo ] || return 1
+                i=$((i + 2)) ;;
+              --user=*|--group=*|--host=*|--chdir=*|--role=*|--type=*)
+                [ "$token" = sudo ] || return 1
+                i=$((i + 1)) ;;
+              -p)
+                if [ "$token" = sudo ]; then i=$((i + 2)); else i=$((i + 1)); fi ;;
+              -f|-o)
+                [ "$token" = time ] || [ "$token" = stdbuf ] || return 1
+                i=$((i + 2)) ;;
+              -n)
+                if [ "$token" = nice ]; then i=$((i + 2));
+                elif [ "$token" = sudo ]; then i=$((i + 1));
+                else return 1; fi ;;
+              -s|-k)
+                if [ "$token" = timeout ]; then i=$((i + 2));
+                elif [ "$token" = sudo ]; then i=$((i + 1));
+                else return 1; fi ;;
+              -i|-e)
+                [ "$token" = stdbuf ] || return 1
+                i=$((i + 2)) ;;
+              --adjustment)
+                [ "$token" = nice ] || return 1
+                i=$((i + 2)) ;;
+              --signal|--kill-after)
+                [ "$token" = timeout ] || return 1
+                i=$((i + 2)) ;;
+              --adjustment=*)
+                [ "$token" = nice ] || return 1
+                i=$((i + 1)) ;;
+              --signal=*|--kill-after=*)
+                [ "$token" = timeout ] || return 1
+                i=$((i + 1)) ;;
+              -o?*|-i?*|-e?*)
+                [ "$token" = stdbuf ] || return 1
+                i=$((i + 1)) ;;
+              -[0-9]*)
+                [ "$token" = nice ] || return 1
+                i=$((i + 1)) ;;
+              -n|-E|-H|-k|-K|-S|-b|-v|-P|-l|-s|-p)
+                i=$((i + 1)) ;;
+              -*) return 1 ;;
+              *) break ;;
+            esac
+          done
+          case "$token" in timeout) i=$((i + 1)) ;; esac
+          continue ;;
+      esac
+      break
+    done
+    [ $i -lt ${#words[@]} ] || continue
+    path=""
+    interpreter=0
+    token="${words[$i]}"
+    case "$token" in
+      source|.) interpreter=1; path="${words[$((i + 1))]:-}" ;;
+      bash|sh|zsh|dash|ksh)
+        interpreter=1
+        i=$((i + 1))
+        while [ $i -lt ${#words[@]} ] && [[ "${words[$i]}" == [-+]* ]]; do
+          case "${words[$i]}" in
+            -c|--command|-[A-Za-z]*c[A-Za-z]*) break ;;
+            -O|-o|+O|+o) i=$((i + 1)) ;;
+          esac
+          i=$((i + 1))
+        done
+        if [ $i -lt ${#words[@]} ]; then
+          case "${words[$i]}" in
+            -c|--command|-[A-Za-z]*c[A-Za-z]*) ;;
+            *) path="${words[$i]}" ;;
+          esac
+        fi ;;
+      ./*|../*|/*|*.sh) path="$token" ;;
+    esac
+      [ -n "$path" ] || continue
+      case "$path" in *'$'*|*'`'*|*'__GIT_SAFE_'*) return 1 ;; esac
+      path="${path#\"}"; path="${path%\"}"
+      path="${path#\'}"; path="${path%\'}"
+      if [ "$interpreter" = "0" ]; then
+        case "$path" in ./*|../*|/*|*.sh) ;; *) continue ;; esac
+      fi
+      if [[ "$path" = /* ]]; then
+        script_path="$path"
+      else
+        script_path="$PAYLOAD_CWD/$path"
+      fi
+      [ -f "$script_path" ] || return 1
+      seen=""
+      for seen in "${SCRIPT_SEEN[@]}"; do
+        [ "$seen" != "$script_path" ] || break
+      done
+      [ "$seen" != "$script_path" ] || continue
+      SCRIPT_SEEN+=("$script_path")
+      script_body=$(<"$script_path") || return 1
+      COMMAND="${COMMAND}"$'\n'"${script_body}"
+      nested_segments=$(COMMAND="$script_body" command_segments) || return 1
+      append_literal_script_contents "$nested_segments" "$((depth + 1))" || return 1
+  done <<< "$segments"
+}
+
+GIT_COMMANDS=""
+IMPLICIT_GIT=0
+EMBEDDED_SHELL=0
+REPEATED_C=0
+INLINE_GIT_ENV=0
+WRAPPER_CWD=0
+OPAQUE_EXEC=0
+CURRENT_OPAQUE_EXEC=0
+GIT_CANDIDATE_INDEX=0
+OPAQUE_EXEC_LINES=""
+DYNAMIC_SHELL=0
+SCRIPT_SEEN=("")
+SAFE_CD_CHAIN=0
+# Only this single, guarded cd form can omit the starting cwd from policy
+# checks. Other control flow may run Git in the starting directory.
+if [[ "$COMMAND" =~ ^[[:space:]]*cd[[:space:]]+[^\;\&\|]+[[:space:]]*\&\&[[:space:]]*git[[:space:]]+[^\;\&\|]*$ ]]; then
+  SAFE_CD_CHAIN=1
+fi
+if ! original_segments=$(command_segments); then
+  printf '%s\n' 'git-safe: command inspection failed.' >&2
+  exit 2
+fi
+if ! append_literal_script_contents "$original_segments"; then
+  printf '%s\n' 'git-safe: Script contents cannot be inspected safely.' >&2
+  exit 2
+fi
+if ! segments=$(command_segments); then
+  printf '%s\n' 'git-safe: command inspection failed.' >&2
+  exit 2
+fi
+if ! segments=$(mark_opaque_segments "$segments"); then
+  printf '%s\n' 'git-safe: command inspection failed.' >&2
+  exit 2
+fi
+while IFS= read -r segment; do
+  if [ "$segment" = "__GIT_SAFE_EMBEDDED__" ]; then
+    EMBEDDED_SHELL=1
+    continue
+  fi
+  normalized=$(strip_git_globals "$segment")
+  if segment_sets_git_env "$normalized"; then
+    INLINE_GIT_ENV=1
+  fi
+  if is_embedded_shell_segment "$segment"; then
+    EMBEDDED_SHELL=1
+    if is_opaque_word "$segment"; then
+      DYNAMIC_SHELL=1
     fi
   fi
-done < <(command_segments)
+  if is_git_command_segment "$normalized"; then
+    if [ "$CURRENT_OPAQUE_EXEC" = "1" ]; then
+      read -r -a candidate_words <<< "$normalized"
+      candidate_words[$GIT_CANDIDATE_INDEX]="git"
+      normalized="${candidate_words[*]}"
+      OPAQUE_EXEC_LINES="${OPAQUE_EXEC_LINES}
+$normalized"
+    fi
+    # Attached env split-string heads have already been normalized to Git;
+    # retain their opaque target context instead of borrowing the cwd policy.
+    if [[ "$segment" =~ (^|[[:space:]])env[[:space:]]+(-S|--split-string) ]]; then
+      EMBEDDED_SHELL=1
+    fi
+    # Inline assignments affect the child Git process, even though they do
+    # not appear in this hook's own environment. No local allowlist is safe.
+    if [[ "$normalized" =~ (^|[[:space:]])GIT_(DIR|WORK_TREE|OBJECT_DIRECTORY)= ]]; then
+      INLINE_GIT_ENV=1
+    fi
+    c_in_segment=$(printf '%s\n' "$segment" | grep -oE '(^|[[:space:]])-C([[:space:]]|[^[:space:]])' | wc -l | tr -d '[:space:]' || true)
+    if [ "$c_in_segment" -gt 1 ]; then
+      REPEATED_C=1
+    fi
+    # A Git invocation without its own -C may still run in the payload cwd.
+    # The only supported exception is one leading `cd target && git ...`, whose
+    # Git call cannot run when cd fails.  All other shell control flow is
+    # conservatively checked against the payload cwd as well.
+    if ! [[ "$segment" =~ (^|[[:space:]])-C([[:space:]]|[^[:space:]]) ]] &&
+       [ "$SAFE_CD_CHAIN" = "0" ]; then
+      IMPLICIT_GIT=1
+    fi
+    if [ -z "$GIT_COMMANDS" ]; then
+      GIT_COMMANDS="$normalized"
+    else
+      GIT_COMMANDS="$GIT_COMMANDS
+$normalized"
+    fi
+  fi
+done <<< "$segments"
+
+# A quoted shell script or command substitution is executable, even though the
+# outer quote parser treats ordinary prose as data.  Its target cannot be
+# inferred safely from the outer shell.
+if [ "$EMBEDDED_SHELL" = "1" ]; then
+  embedded_text=$(printf '%s' "$COMMAND" | tr '\047\042\140\044\050\051' '      ')
+  while IFS= read -r embedded_line; do
+    GIT_COMMANDS="$GIT_COMMANDS
+$(strip_git_globals "$embedded_line")"
+  done <<< "$embedded_text"
+  GIT_COMMANDS="$GIT_COMMANDS
+$COMMAND"
+fi
 
 matches_git_command() {
   printf '%s\n' "$GIT_COMMANDS" | grep -qE "$1" 2>/dev/null
@@ -237,34 +983,100 @@ contains_git_text() {
 }
 
 if [ -z "$GIT_COMMANDS" ]; then
+  if [ "$DYNAMIC_SHELL" != "0" ]; then
+    printf '%s\n' 'git-safe: Shell command is selected at runtime and cannot be inspected.' >&2
+    exit 2
+  fi
   log "SKIP: no executable git command"
   exit 0
 fi
 
-# Load allowlist from .git-safe config
-ALLOWED=()
-CONFIG="${GIT_SAFE_CONFIG:-.git-safe}"
-if [ -f "$CONFIG" ]; then
+# Resolve policy from the repository the command targets, not the hook's own
+# process cwd.  A session in repo A can run `git -C repo-B ...` or `cd repo-B &&
+# git ...`; A's allowlist must never authorize destructive work in B.  Multiple
+# targets must all allow the operation.  Unresolvable explicit targets deny it.
+target_path() {
+  local raw="$1"
+  raw="${raw#\"}"; raw="${raw%\"}"
+  raw="${raw#\'}"; raw="${raw%\'}"
+  (cd "$PAYLOAD_CWD" 2>/dev/null && cd "$raw" 2>/dev/null && pwd) || true
+}
+
+TARGET_DIRS=()
+UNRESOLVED_TARGET=0
+[ "$EMBEDDED_SHELL" = "0" ] || UNRESOLVED_TARGET=1
+[ "$REPEATED_C" = "0" ] || UNRESOLVED_TARGET=1
+[ "$INLINE_GIT_ENV" = "0" ] || UNRESOLVED_TARGET=1
+[ "$WRAPPER_CWD" = "0" ] || UNRESOLVED_TARGET=1
+[ "$OPAQUE_EXEC" = "0" ] || UNRESOLVED_TARGET=1
+# Git repository environment can redirect the actual operation independently
+# of -C. Without modelling that environment, no local allowlist is trusted.
+if [ -n "${GIT_DIR:-}" ] || [ -n "${GIT_WORK_TREE:-}" ] ||
+   [ -n "${GIT_OBJECT_DIRECTORY:-}" ]; then
+  UNRESOLVED_TARGET=1
+fi
+C_OPTIONS=0
+CD_OPTIONS=0
+while IFS= read -r raw; do
+  [ -n "$raw" ] || continue
+  C_OPTIONS=$((C_OPTIONS + 1))
+  raw=$(printf '%s' "$raw" | sed -E 's/.*-C[[:space:]]+//')
+  target=$(target_path "$raw")
+  if [ -n "$target" ]; then TARGET_DIRS+=("$target"); else UNRESOLVED_TARGET=1; fi
+done < <(printf '%s\n' "$COMMAND" | grep -oE "(^|[[:space:]])-C[[:space:]]+('[^']*'|\"[^\"]*\"|[^[:space:];&|]+)" || true)
+# Attached -C and alternate git-dir/work-tree forms are not resolved here.
+if printf '%s\n' "$COMMAND" | grep -qE '(^|[[:space:]])-C[^[:space:]]|(^|[[:space:]])--(git-dir|work-tree)(=|[[:space:]])'; then
+  UNRESOLVED_TARGET=1
+fi
+while IFS= read -r raw; do
+  [ -n "$raw" ] || continue
+  CD_OPTIONS=$((CD_OPTIONS + 1))
+  raw=$(printf '%s' "$raw" | sed -E 's/.*cd[[:space:]]+//')
+  target=$(target_path "$raw")
+  if [ -n "$target" ]; then TARGET_DIRS+=("$target"); else UNRESOLVED_TARGET=1; fi
+done < <(printf '%s\n' "$COMMAND" | grep -oE "(^|[;&|][[:space:]]*)cd[[:space:]]+('[^']*'|\"[^\"]*\"|[^[:space:];&|]+)" || true)
+# Relative -C after cd, and repeated cd, need full shell state tracking to
+# resolve precisely. Do not borrow any one of their policies.
+if [ "$CD_OPTIONS" -gt 1 ] || { [ "$CD_OPTIONS" -gt 0 ] && [ "$C_OPTIONS" -gt 0 ]; }; then
+  UNRESOLVED_TARGET=1
+fi
+[ ${#TARGET_DIRS[@]} -gt 0 ] || TARGET_DIRS=("$PAYLOAD_CWD")
+[ "$IMPLICIT_GIT" = "0" ] || TARGET_DIRS+=("$PAYLOAD_CWD")
+
+CONFIG_FILES=()
+if [ -n "${GIT_SAFE_CONFIG:-}" ]; then
+  CONFIG_FILES=("$GIT_SAFE_CONFIG")
+elif [ "$UNRESOLVED_TARGET" = "0" ]; then
+  for target in "${TARGET_DIRS[@]}"; do
+    root=$(env -u GIT_DIR -u GIT_WORK_TREE -u GIT_OBJECT_DIRECTORY \
+      git -C "$target" rev-parse --show-toplevel 2>/dev/null || true)
+    [ -n "$root" ] || root="$target"
+    CONFIG_FILES+=("$root/.git-safe")
+  done
+fi
+
+config_allows() {
+  local op="$1" config="$2" line pattern
+  [ -f "$config" ] || return 1
   while IFS= read -r line; do
     line=$(echo "$line" | sed 's/#.*//' | xargs)
     [ -z "$line" ] && continue
     if [[ "$line" == allow:* ]]; then
       pattern=$(echo "$line" | sed 's/^allow:\s*//' | xargs)
-      ALLOWED+=("$pattern")
+      [ "$pattern" = "$op" ] && return 0
     fi
-  done < "$CONFIG"
-fi
-
-# Check if an operation is allowed via config
-is_allowed() {
-  local op="$1"
-  for a in "${ALLOWED[@]+"${ALLOWED[@]}"}"; do
-    if [ "$a" = "$op" ]; then
-      log "ALLOWED by config: $op"
-      return 0
-    fi
-  done
+  done < "$config"
   return 1
+}
+
+is_allowed() {
+  local op="$1" config
+  [ ${#CONFIG_FILES[@]} -gt 0 ] || return 1
+  for config in "${CONFIG_FILES[@]}"; do
+    config_allows "$op" "$config" || return 1
+  done
+  log "ALLOWED by config: $op"
+  return 0
 }
 
 block() {
@@ -277,6 +1089,146 @@ block() {
   printf '%s\n' "$msg" >&2
   exit 2
 }
+
+# Opaque markers represent words whose values are unknown until execution.
+# Unquoted values can split into multiple argv entries or join literal text.
+# Either may become a guarded flag or refspec. A quoted commit message is
+# data after -m/--message.
+check_opaque_git_operands() {
+  local line words=() i j verb previous
+  while IFS= read -r line; do
+    line=$(strip_git_globals "$line")
+    read -r -a words <<< "$line"
+    for ((i = 0; i + 1 < ${#words[@]}; i++)); do
+      is_git_binary_token "${words[$i]}" || continue
+      verb="${words[$((i + 1))]}"
+      if is_opaque_word "$verb"; then
+        block "Git subcommand is selected at runtime and cannot be inspected."
+      fi
+      case "$verb" in
+        status|log|show|diff|rev-parse|ls-files|ls-tree|cat-file|check-attr|check-ignore|for-each-ref|add)
+          break ;;
+      esac
+      for ((j = i + 2; j < ${#words[@]}; j++)); do
+        if ! is_opaque_word "${words[$j]}"; then
+          continue
+        fi
+        previous="${words[$((j - 1))]}"
+        if [ "$verb" = "commit" ] && [ "${words[$j]}" = "__GIT_SAFE_OPAQUE_Q__" ] &&
+           { [ "$previous" = "-m" ] || [ "$previous" = "--message" ]; }; then
+          continue
+        fi
+        block "Git argument is selected at runtime and may change a guarded operation."
+      done
+      break
+    done
+  done <<< "$GIT_COMMANDS"
+}
+
+# The scanner retains literal -c values but represents a quoted value with
+# spaces as an opaque marker. Either may define an alias that rewrites it.
+check_inline_alias_config() {
+  local segment normalized words=() i git_index token value prior_config=0
+  while IFS= read -r segment; do
+    if segment_sets_git_config "$segment"; then
+      prior_config=1
+    fi
+    normalized=$(strip_git_globals "$segment")
+    is_git_command_segment "$normalized" || continue
+    [ "$prior_config" = "0" ] ||
+      block "Git configuration is selected at runtime and may define an alias."
+    read -r -a words <<< "$segment"
+    git_index=-1
+    for ((i = 0; i < ${#words[@]}; i++)); do
+      if is_git_binary_token "${words[$i]}" || is_opaque_word "${words[$i]}"; then
+        git_index=$i
+        break
+      fi
+    done
+    [ "$git_index" -ge 0 ] || continue
+    for ((i = 0; i < git_index; i++)); do
+      case "${words[$i]}" in
+        GIT_CONFIG_*=*|HOME=*|XDG_CONFIG_HOME=*)
+          block "Git configuration source is selected at runtime." ;;
+      esac
+    done
+    for ((i = git_index + 1; i < ${#words[@]}; i++)); do
+      token="${words[$i]}"
+      case "$token" in
+        -c|--config-env)
+          value="${words[$((i + 1))]:-}"
+          i=$((i + 1)) ;;
+        -c?*) value="${token#-c}" ;;
+        --config-env=*) value="${token#--config-env=}" ;;
+        -C|--git-dir|--work-tree|--namespace|--super-prefix)
+          i=$((i + 1)); continue ;;
+        -*) continue ;;
+        *) break ;;
+      esac
+      value=$(printf '%s' "$value" | tr '[:upper:]' '[:lower:]')
+      case "$value" in
+        *__git_safe_opaque_q__*|*__git_safe_opaque_u__*|alias.*|include.*|includeif.*|help.autocorrect=*)
+          block "Git alias configuration cannot be inspected safely." ;;
+      esac
+    done
+  done <<< "$segments"
+}
+
+# Git itself resolves global, conditional-include, and repository aliases.
+# An alias may expand to destructive Git options or arbitrary shell code.
+# Built-in commands take precedence over aliases.
+check_configured_aliases() {
+  local builtins line words=() i verb target key rc prior_git_config=0
+  if ! builtins=$(git --list-cmds=builtins 2>/dev/null); then
+    block "Git built-in command inventory is unavailable."
+  fi
+  if [[ "$segments" == *$'\n'* ]]; then
+    prior_git_config=1
+  fi
+  while IFS= read -r line; do
+    line=$(strip_git_globals "$line")
+    if printf '%s\n' "$OPAQUE_EXEC_LINES" | grep -Fqx "$line"; then
+      continue
+    fi
+    read -r -a words <<< "$line"
+    for ((i = 0; i + 1 < ${#words[@]}; i++)); do
+      is_git_binary_token "${words[$i]}" || continue
+      verb="${words[$((i + 1))]}"
+      [[ "$verb" =~ ^[A-Za-z0-9][A-Za-z0-9_.-]*$ ]] ||
+        block "Git subcommand cannot be inspected safely."
+      if [ "$verb" = "config" ]; then
+        # A previous segment may define an alias before this payload invokes
+        # it; inspecting only the pre-tool repository snapshot is insufficient.
+        prior_git_config=1
+      fi
+      if printf '%s\n' "$builtins" | grep -Fqx "$verb"; then
+        break
+      fi
+      [ "$prior_git_config" = "0" ] ||
+        block "Git configuration may have changed before alias inspection."
+      [ "$UNRESOLVED_TARGET" = "0" ] ||
+        block "Git alias target cannot be resolved safely."
+      for target in "${TARGET_DIRS[@]}"; do
+        for key in "alias.$verb" "alias.$verb.command"; do
+          if env -u GIT_DIR -u GIT_WORK_TREE -u GIT_OBJECT_DIRECTORY \
+            git -C "$target" config --get "$key" >/dev/null 2>&1; then
+            block "Git alias '$verb' may execute a guarded operation."
+          else
+            rc=$?
+            [ "$rc" -eq 1 ] || block "Git alias inspection failed."
+          fi
+        done
+      done
+      break
+    done
+  done <<< "$GIT_COMMANDS"
+}
+
+[ "$DYNAMIC_SHELL" = "0" ] ||
+  block "Shell command is selected at runtime and cannot be inspected."
+check_opaque_git_operands
+check_inline_alias_config
+check_configured_aliases
 
 # --- Destructive operation checks ---
 
