@@ -208,7 +208,7 @@ PREFILTER_PATTERNS=(
   '(^|\s|;|&&|\|\|)(env|printenv)\s*($|\||;|&&|\|\||>|2>)'
   '(^|\s|;|&&|\|\|)export\s+-p\s*($|\||;|&&|\|\||>)'
   '(cat|less|more|head|tail|bat)\s+.*\.(env|pem|key|p12|pfx|credentials|secret)(\s|$)'
-  '(bash|sh|zsh)\s+-[a-zA-Z]*x'
+  '(^|[^[:alnum:]_.-])(bash|sh|zsh)\s+-[a-zA-Z]*x'
   '(^|\s|;|&&|\|\|)set\s+-[a-zA-Z]*x'
   '(^|\s|;|&&|\|\|)terraform\s+destroy'
   '(^|\s|;|&&|\|\|)pulumi\s+destroy'
@@ -252,15 +252,15 @@ PREFILTER_PATTERNS=(
   "sqlite3\s+.*(Application Support/Code|\.vscode|\.cursor|\.config/(Code|Cursor)|\.vscode-server)"
   'rm\s+-[rRf]+\s+/(mnt|media|Volumes|nfs|mount)/'
   '(nc|ncat|netcat|socat)\s.*<\s'
-  '(bash|sh|zsh|dash|ksh)\s+<<<\s'
-  "(bash|sh|zsh|dash|ksh)\s+<<-?\s*['\"]?[A-Za-z_]"
+  '(^|[^[:alnum:]_.-])(bash|sh|zsh|dash|ksh)\s+<<<\s'
+  "(^|[^[:alnum:]_.-])(bash|sh|zsh|dash|ksh)\s+<<-?\s*['\"]?[A-Za-z_]"
   "(^|[;&|]\s*)eval\s+['\"]"
   '\|\s*xargs\s.*\b(bash|sh|zsh|dash|ksh)\s+-c\b'
   '(base64\s+(-d|--decode|-D)|openssl\s+(base64|enc)\s+-d)\s*\|.*\s*(bash|sh|zsh|dash|ksh|source|eval)'
-  '(bash|sh|zsh)\s+-c\s.*\$\(.*base64\s+(-d|--decode|-D)'
+  '(^|[^[:alnum:]_.-])(bash|sh|zsh)\s+-c\s.*\$\(.*base64\s+(-d|--decode|-D)'
   'xxd\s+-r.*\|.*\s*(bash|sh|zsh|dash|ksh|source|eval)'
   "printf\s+['\"]\\\\(x[0-9a-fA-F]|[0-7]{3}).*\|.*\s*(bash|sh|zsh|dash|ksh|source|eval)"
-  '(bash|sh|zsh|dash|ksh)\s+<\(\s*(curl|wget)\s'
+  '(^|[^[:alnum:]_.-])(bash|sh|zsh|dash|ksh)\s+<\(\s*(curl|wget)\s'
   '\|\s*rev\s*\|.*\s*(bash|sh|zsh|dash|ksh|source|eval)'
   'python[23]?\s+-c\s.*\b(subprocess|os\.system|os\.popen)\b'
   "ruby\s+-e\s.*\b(system|exec|%x|Kernel\.)"
@@ -462,7 +462,7 @@ if echo "$COMMAND" | grep -qE '(cat|less|more|head|tail|bat)\s+.*\.(env|pem|key|
 fi
 
 # Debug trace mode (leaks secrets in trace output)
-if echo "$COMMAND" | grep -qE '(bash|sh|zsh)\s+-[a-zA-Z]*x' 2>/dev/null; then
+if echo "$COMMAND" | grep -qE '(^|[^[:alnum:]_.-])(bash|sh|zsh)\s+-[a-zA-Z]*x' 2>/dev/null; then
   is_allowed "debug-trace" || block "Running scripts with -x traces all commands with expanded variables, exposing secrets in output." "Remove the -x flag, or add 'allow: debug-trace' to .bash-guard."
 fi
 if echo "$COMMAND" | grep -qE '(^|\s|;|&&|\|\|)set\s+-[a-zA-Z]*x' 2>/dev/null; then
@@ -635,12 +635,12 @@ fi
 # These patterns detect command execution via shell redirection.
 
 # Here-string: bash <<< "command", sh <<< 'command'
-if echo "$COMMAND" | grep -qE '(bash|sh|zsh|dash|ksh)\s+<<<\s' 2>/dev/null; then
+if echo "$COMMAND" | grep -qE '(^|[^[:alnum:]_.-])(bash|sh|zsh|dash|ksh)\s+<<<\s' 2>/dev/null; then
   is_allowed "here-exec" || block "Here-string feeds content directly to a shell interpreter, bypassing safety checks." "Run the command directly instead of via here-string. Or add 'allow: here-exec' to .bash-guard."
 fi
 
 # Here-doc: bash << EOF, sh << 'DELIM', bash <<-EOF (with indent stripping)
-if echo "$COMMAND" | grep -qE "(bash|sh|zsh|dash|ksh)\s+<<-?\s*['\"]?[A-Za-z_]" 2>/dev/null; then
+if echo "$COMMAND" | grep -qE "(^|[^[:alnum:]_.-])(bash|sh|zsh|dash|ksh)\s+<<-?\s*['\"]?[A-Za-z_]" 2>/dev/null; then
   is_allowed "here-exec" || block "Here-document feeds content directly to a shell interpreter, bypassing safety checks." "Run the commands directly instead of via here-doc. Or add 'allow: here-exec' to .bash-guard."
 fi
 
@@ -665,7 +665,7 @@ if echo "$COMMAND" | grep -qE '(base64\s+(-d|--decode|-D)|openssl\s+(base64|enc)
 fi
 
 # base64 decode via command substitution to shell
-if echo "$COMMAND" | grep -qE '(bash|sh|zsh)\s+-c\s.*\$\(.*base64\s+(-d|--decode|-D)' 2>/dev/null; then
+if echo "$COMMAND" | grep -qE '(^|[^[:alnum:]_.-])(bash|sh|zsh)\s+-c\s.*\$\(.*base64\s+(-d|--decode|-D)' 2>/dev/null; then
   is_allowed "decode-exec" || block "Executing base64-decoded content via command substitution bypasses all safety checks." "Decode to a file first, review it, then run it. Or add 'allow: decode-exec' to .bash-guard."
 fi
 
@@ -680,7 +680,7 @@ if echo "$COMMAND" | grep -qE "printf\s+['\"]\\\\(x[0-9a-fA-F]|[0-7]{3}).*\|.*\s
 fi
 
 # Process substitution with network downloads: bash <(curl ...) or sh <(wget ...)
-if echo "$COMMAND" | grep -qE '(bash|sh|zsh|dash|ksh)\s+<\(\s*(curl|wget)\s' 2>/dev/null; then
+if echo "$COMMAND" | grep -qE '(^|[^[:alnum:]_.-])(bash|sh|zsh|dash|ksh)\s+<\(\s*(curl|wget)\s' 2>/dev/null; then
   is_allowed "pipe-to-shell" || block "Process substitution downloads and executes code without saving it for review." "Download the script first, review it, then run it. Or add 'allow: pipe-to-shell' to .bash-guard."
 fi
 

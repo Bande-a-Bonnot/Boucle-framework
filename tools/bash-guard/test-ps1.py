@@ -403,6 +403,19 @@ def main():
         assert_blocked("block bash << EOF",
                        make_input("Bash", "bash << EOF"))
 
+        # --- 37b. Shell names need a word boundary ---
+        print("\nShell names need a word boundary:")
+        assert_allowed("allow here-doc writing a .sh file",
+                       make_input("Bash", "cat > build.sh <<EOF\necho hi\nEOF"))
+        assert_allowed("allow here-string to a .sh script",
+                       make_input("Bash", "./run.sh <<< 'input'"))
+        assert_allowed("allow script flag ending in x",
+                       make_input("Bash", "./deploy.sh -x"))
+        assert_blocked("block here-doc to /bin/bash",
+                       make_input("Bash", "/bin/bash <<EOF"))
+        assert_blocked("block here-string through env",
+                       make_input("Bash", "env bash <<< 'rm -rf /'"))
+
         # --- 38. eval string literal ---
         print("\neval string literal:")
         assert_blocked('block eval "rm -rf /"',

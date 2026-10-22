@@ -345,7 +345,7 @@ if ($command -match '(cat|less|more|head|tail|bat)\s+.*\.(env|pem|key|p12|pfx|cr
 }
 
 # Debug trace mode (leaks secrets in trace output)
-if ($command -match '(bash|sh|zsh)\s+-[a-zA-Z]*x') {
+if ($command -match '(^|[^\w.-])(bash|sh|zsh)\s+-[a-zA-Z]*x') {
     if (-not (Test-Allowed 'debug-trace')) {
         Block-Tool 'bash-guard: Running scripts with -x traces all commands with expanded variables, exposing secrets in output. Suggestion: Remove the -x flag, or add ''allow: debug-trace'' to .bash-guard.'
     }
@@ -604,14 +604,14 @@ if ($command -match '(nc|ncat|netcat|socat)\s.*<\s') {
 # --- Here-string/here-doc to shell (bypass via redirection instead of pipe) ---
 
 # Here-string: bash <<< "command", sh <<< 'command'
-if ($command -match '(bash|sh|zsh|dash|ksh)\s+<<<\s') {
+if ($command -match '(^|[^\w.-])(bash|sh|zsh|dash|ksh)\s+<<<\s') {
     if (-not (Test-Allowed 'here-exec')) {
         Block-Tool 'bash-guard: Here-string feeds content directly to a shell interpreter, bypassing safety checks. Suggestion: Run the command directly instead of via here-string. Or add ''allow: here-exec'' to .bash-guard.'
     }
 }
 
 # Here-doc: bash << EOF, sh << 'DELIM', bash <<-EOF (with indent stripping)
-if ($command -match '(bash|sh|zsh|dash|ksh)\s+<<-?\s*[''"]?[A-Za-z_]') {
+if ($command -match '(^|[^\w.-])(bash|sh|zsh|dash|ksh)\s+<<-?\s*[''"]?[A-Za-z_]') {
     if (-not (Test-Allowed 'here-exec')) {
         Block-Tool 'bash-guard: Here-document feeds content directly to a shell interpreter, bypassing safety checks. Suggestion: Run the commands directly instead of via here-doc. Or add ''allow: here-exec'' to .bash-guard.'
     }
@@ -641,7 +641,7 @@ if ($command -match '(base64\s+(-d|--decode|-D)|openssl\s+(base64|enc)\s+-d)\s*\
 }
 
 # base64 decode via command substitution to shell
-if ($command -match '(bash|sh|zsh)\s+-c\s.*\$\(.*base64\s+(-d|--decode|-D)') {
+if ($command -match '(^|[^\w.-])(bash|sh|zsh)\s+-c\s.*\$\(.*base64\s+(-d|--decode|-D)') {
     if (-not (Test-Allowed 'decode-exec')) {
         Block-Tool 'bash-guard: Executing base64-decoded content via command substitution bypasses all safety checks. Suggestion: Decode to a file first, review it, then run it. Or add ''allow: decode-exec'' to .bash-guard.'
     }
@@ -662,7 +662,7 @@ if ($command -match 'printf\s+[''"]\\(x[0-9a-fA-F]|[0-7]{3}).*\|.*\s*(bash|sh|zs
 }
 
 # Process substitution with network downloads: bash <(curl ...) or sh <(wget ...)
-if ($command -match '(bash|sh|zsh|dash|ksh)\s+<\(\s*(curl|wget)\s') {
+if ($command -match '(^|[^\w.-])(bash|sh|zsh|dash|ksh)\s+<\(\s*(curl|wget)\s') {
     if (-not (Test-Allowed 'pipe-to-shell')) {
         Block-Tool 'bash-guard: Process substitution downloads and executes code without saving it for review. Suggestion: Download the script first, review it, then run it. Or add ''allow: pipe-to-shell'' to .bash-guard.'
     }
