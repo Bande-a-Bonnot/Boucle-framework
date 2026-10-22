@@ -1232,6 +1232,18 @@ rm -f "$_LAYERED_HOME/.bash-guard"
 rm -rf "$_LAYERED_HOME" "$_LAYERED_PROJ"
 
 echo ""
+echo "--- Fast path ---"
+if python3 "$SCRIPT_DIR/test-prefilter.py" "$HOOK"; then
+  PASS=$((PASS + 1))
+else
+  FAIL=$((FAIL + 1))
+fi
+assert_allowed "plain command takes the fast path" "ls -la src"
+assert_blocked "check on second line still runs" $'echo ok\nsudo rm file'
+assert_blocked "case-insensitive check still runs" "psql -c 'drop table users'"
+
+
+echo ""
 echo "================================"
 echo "Results: $PASS passed, $FAIL failed"
 echo "Total: $((PASS + FAIL)) tests"
