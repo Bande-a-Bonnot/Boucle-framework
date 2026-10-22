@@ -169,6 +169,153 @@ for denied in "${DENIED[@]+"${DENIED[@]}"}"; do
   fi
 done
 
+# --- Fast path ---
+# Each check below pipes the command through its own grep, which costs two
+# process starts per check. Most commands match none of them, so test every
+# pattern in one grep first and allow the command if nothing matches.
+# test-prefilter.py fails if a check's pattern is missing from these lists.
+PREFILTER_PATTERNS=(
+  'rm\s+(-[a-zA-Z]*r[a-zA-Z]*f|(-[a-zA-Z]*f[a-zA-Z]*r))\s'
+  'rm\s+-[rRf]+\s+(/(\s|$)|/\*|~(/|\s|$)|\.\.|/usr|/etc|/var|/home|/System|/Library|\$HOME)'
+  'rm\s+-[rRf]+\s+\*\s*$'
+  'chmod\s+(-[a-zA-Z]*R|--recursive)\s'
+  'chmod\s+.*\s(777|000|666)\s'
+  'chown\s+(-[a-zA-Z]*R|--recursive)\s.*\s(/|~|/usr|/etc|/var|/home)'
+  '(curl|wget)\s.*\|\s*(sh|bash|zsh|dash|ksh|source|eval)'
+  '(^|[;&|]\s*)sudo\s'
+  '(^|[;&|]\s*)(pkexec|doas)\s'
+  '(^|[;&|]\s*)su\s+(-c\s|root)'
+  'kill\s+-9\s+(-1|0)\b'
+  'killall\s+-9\s'
+  'mkfs'
+  '(^|[;&|]\s*)diskutil\s+(eraseDisk|eraseVolume|partitionDisk)'
+  '(^|[;&|]\s*)diskutil\s+apfs\s+deleteContainer'
+  '(^|[;&|]\s*)(fdisk|gdisk|sfdisk)\s'
+  '(^|[;&|]\s*)parted\s'
+  '(^|[;&|]\s*)wipefs\s'
+  'dd\s.*of=/dev/'
+  'dd\s.*of=/dev/(null|zero|stdout|stderr)'
+  '>\s*/(etc|usr|System|Library|boot|sbin)/'
+  'eval\s+.*\$[A-Za-z_]'
+  'npm\s+install\s+-g\b'
+  'docker(-compose|\s+compose)\s+down\s.*-v'
+  'docker\s+system\s+prune'
+  'docker\s+volume\s+(prune|rm)\b'
+  '(^|\s|;|&&|\|\|)(npx\s+)?prisma\s+db\s+push'
+  '(^|\s|;|&&|\|\|)dropdb\s'
+  'truncate\s+-'
+  '(db:drop|db:wipe|migrate:fresh|fixtures:load|db:seed:replant)'
+  '(^|\s|;|&&|\|\|)(env|printenv)\s*($|\||;|&&|\|\||>|2>)'
+  '(^|\s|;|&&|\|\|)export\s+-p\s*($|\||;|&&|\|\||>)'
+  '(cat|less|more|head|tail|bat)\s+.*\.(env|pem|key|p12|pfx|credentials|secret)(\s|$)'
+  '(^|[^[:alnum:]_.-])(bash|sh|zsh)\s+-[a-zA-Z]*x'
+  '(^|\s|;|&&|\|\|)set\s+-[a-zA-Z]*x'
+  '(^|\s|;|&&|\|\|)terraform\s+destroy'
+  '(^|\s|;|&&|\|\|)pulumi\s+destroy'
+  'aws\s+s3\s+(rm|rb)\s.*--recursive'
+  'kubectl\s+delete\s+(namespace|ns|all|deployment|statefulset)\s'
+  'gcloud\s.*(delete|destroy)\s'
+  '(^|\s|;|&&|\|\|)helm\s+(uninstall|delete)\s'
+  'kubectl\s+drain\s'
+  'kubectl\s+scale\s.*--replicas[= ]*0\b'
+  '(^|\s|;|&&|\|\|)az\s+(group|resource|vm|webapp|functionapp|sql\s+server)\s+delete\s'
+  '(^|\s|;|&&|\|\|)doctl\s.*(delete|destroy)\s'
+  '(^|\s|;|&&|\|\|)(flyctl|fly)\s+(apps\s+)?destroy\s'
+  '(^|\s|;|&&|\|\|)heroku\s+apps:destroy\s'
+  '(^|\s|;|&&|\|\|)vercel\s+(rm|remove)\s'
+  '(^|\s|;|&&|\|\|)netlify\s+sites:delete\s'
+  'aws\s+ec2\s+terminate-instances\s'
+  'aws\s+(rds|dynamodb|elasticache|lambda)\s+delete-'
+  'aws\s+cloudformation\s+delete-stack\s'
+  '(doctrine:schema:drop|sequelize\s+db:drop|typeorm\s+schema:drop)'
+  'redis-cli\s.*(FLUSHALL|FLUSHDB)'
+  '(wp\s+db\s+(reset|clean)|drush\s+sql-drop)'
+  '(mongosh?|mongo)\s.*dropDatabase'
+  'find\s.*\s-delete\b'
+  'find\s.*-exec\s+rm\s'
+  '\|\s*xargs\s.*rm\b'
+  'git\s+clean\s+-[a-zA-Z]*f'
+  'docker\s+run\s.*-v\s+/[^:]*:'
+  '(^|\s|;|&&|\|\|)docker\s+exec\s'
+  '(^|[;&|]\s*)shred\s'
+  '(^|[;&|]\s*)truncate\s+-s\s*0\s'
+  'dd\s.*if=/dev/(zero|urandom).*of=/dev/'
+  'curl\s.*(-d\s*@|-F\s+[^=]+=@|--data-binary\s+@|--data\s+@|--data-urlencode\s+@|--upload-file\s)'
+  'wget\s.*(--post-file|--body-file)\s'
+  'python[23]?\s+-c\s.*os\.environ'
+  'node\s+-e\s.*process\.env($|[^.\[a-zA-Z])'
+  'ruby\s+-e\s.*ENV'
+  '(cat|less|more|head|tail|strings)\s+/proc/[^/]+/environ'
+  '(cat|less|more|head|tail|bat)\s+.*\.ssh/(id_|.*\.pem|.*key)'
+  '(cat|less|more|head|tail|bat)\s+.*(\.bash_history|\.zsh_history|\.sh_history|\.history)'
+  'sqlite3\s+.*\.(vscdb|vscdb-wal|vscdb-shm)'
+  "sqlite3\s+.*(Application Support/Code|\.vscode|\.cursor|\.config/(Code|Cursor)|\.vscode-server)"
+  'rm\s+-[rRf]+\s+/(mnt|media|Volumes|nfs|mount)/'
+  '(nc|ncat|netcat|socat)\s.*<\s'
+  '(^|[^[:alnum:]_.-])(bash|sh|zsh|dash|ksh)\s+<<<\s'
+  "(^|[^[:alnum:]_.-])(bash|sh|zsh|dash|ksh)\s+<<-?\s*['\"]?[A-Za-z_]"
+  "(^|[;&|]\s*)eval\s+['\"]"
+  '\|\s*xargs\s.*\b(bash|sh|zsh|dash|ksh)\s+-c\b'
+  '(base64\s+(-d|--decode|-D)|openssl\s+(base64|enc)\s+-d)\s*\|.*\s*(bash|sh|zsh|dash|ksh|source|eval)'
+  '(^|[^[:alnum:]_.-])(bash|sh|zsh)\s+-c\s.*\$\(.*base64\s+(-d|--decode|-D)'
+  'xxd\s+-r.*\|.*\s*(bash|sh|zsh|dash|ksh|source|eval)'
+  "printf\s+['\"]\\\\(x[0-9a-fA-F]|[0-7]{3}).*\|.*\s*(bash|sh|zsh|dash|ksh|source|eval)"
+  '(^|[^[:alnum:]_.-])(bash|sh|zsh|dash|ksh)\s+<\(\s*(curl|wget)\s'
+  '\|\s*rev\s*\|.*\s*(bash|sh|zsh|dash|ksh|source|eval)'
+  'python[23]?\s+-c\s.*\b(subprocess|os\.system|os\.popen)\b'
+  "ruby\s+-e\s.*\b(system|exec|%x|Kernel\.)"
+  "perl\s+-e\s.*\b(system|exec|qx)"
+  'node\s+-e\s.*child_process'
+  '(^|[;&|]\s*)perl\s+(-[A-Za-z]*i|-i[^\s]*)'
+  '(^|[;&|]\s*)ruby\s+(-[A-Za-z]*i|-i[^\s]*)'
+  '(^|[;&|]\s*)sed\s+(-[A-Za-z]*i|-i[^\s]*)'
+  '(^|\s|;|&&|\|\|)(LD_PRELOAD|LD_LIBRARY_PATH)='
+  '(^|\s|;|&&|\|\|)(export\s+)?IFS='
+  '(^|[;&|]\s*)(timeout|time|nice|nohup|strace|ltrace|unbuffer|caffeinate)\s+.*(rm\s+-[rRf]|mkfs|dd\s|shred|wipefs|fdisk|gdisk|parted|sfdisk|chmod\s.*777|chown\s.*-R)'
+  '(cp|mv|scp|rsync)\s+.*(\.ssh/|\.aws/|\.gnupg/|\.netrc|\.npmrc|\.docker/config)'
+  '(^|[;&|]\s*)security\s+(find-generic-password|find-internet-password|delete-generic-password|delete-internet-password|add-generic-password|dump-keychain)'
+  '(^|[;&|]\s*)crontab\s+-[erl]'
+  '(^|[;&|]\s*)launchctl\s+(load|unload|submit|bootstrap|bootout)'
+  '\|\s*eval\b'
+  '(curl|wget)\s.*\|\s*fish\b'
+  '(^|[;&|]\s*)systemctl\s+(start|stop|restart|disable|enable|mask)\s'
+  '(^|[;&|]\s*)service\s+\S+\s+(start|stop|restart)'
+  '(^|[;&|]\s*)ssh-keygen(\s|$)'
+  '(^|[;&|]\s*)ssh-add\s'
+  '(^|[;&|]\s*)pkill\s+-9\s'
+  '(^|[;&|]\s*)git\s+push\s+.*(-f\b|--force\b|--force-with-lease\b)'
+  '(^|[;&|]\s*)git\s+filter-branch\b'
+  '(^|[;&|]\s*)docker\s+rm\s+-[a-zA-Z]*f'
+  '(yarn|pnpm)\s+global\s+add\b'
+  '(^|[;&|]\s*)passwd\b'
+  'pip3?\s+install\s.*--target'
+  'pip3?\s+install\s.*--user'
+  '(\.\./){4,}'
+  '(^|[;&|]\s*)gh\s+repo\s+delete\b'
+  'gh\s+api\s.*(-X\s+(PUT|PATCH|DELETE)\s.*(/protection|/rulesets)|(/protection|/rulesets).*-X\s+(PUT|PATCH|DELETE))'
+)
+PREFILTER_PATTERNS_I=(
+  "DROP\s+(DATABASE|TABLE)"
+  "TRUNCATE\s+"
+)
+
+_prefilter_match() {
+  local flags="$1" p args=()
+  shift
+  for p in "$@"; do args+=(-e "$p"); done
+  # Exit status 1 means no pattern matched. Treat 0 (match) and 2 (grep
+  # error, such as a pattern this grep cannot compile) as a possible match,
+  # so a bad pattern falls through to the full checks instead of skipping them.
+  local rc=0
+  echo "$COMMAND" | grep "$flags" "${args[@]}" >/dev/null 2>&1 || rc=$?
+  [ "$rc" -ne 1 ]
+}
+
+if ! _prefilter_match -qE "${PREFILTER_PATTERNS[@]}" && ! _prefilter_match -qiE "${PREFILTER_PATTERNS_I[@]}"; then
+  log "ALLOW (fast path): $COMMAND"
+  exit 0
+fi
+
 # --- Dangerous operation checks ---
 
 # rm -rf on critical/broad paths
@@ -315,7 +462,7 @@ if echo "$COMMAND" | grep -qE '(cat|less|more|head|tail|bat)\s+.*\.(env|pem|key|
 fi
 
 # Debug trace mode (leaks secrets in trace output)
-if echo "$COMMAND" | grep -qE '(bash|sh|zsh)\s+-[a-zA-Z]*x' 2>/dev/null; then
+if echo "$COMMAND" | grep -qE '(^|[^[:alnum:]_.-])(bash|sh|zsh)\s+-[a-zA-Z]*x' 2>/dev/null; then
   is_allowed "debug-trace" || block "Running scripts with -x traces all commands with expanded variables, exposing secrets in output." "Remove the -x flag, or add 'allow: debug-trace' to .bash-guard."
 fi
 if echo "$COMMAND" | grep -qE '(^|\s|;|&&|\|\|)set\s+-[a-zA-Z]*x' 2>/dev/null; then
@@ -488,12 +635,12 @@ fi
 # These patterns detect command execution via shell redirection.
 
 # Here-string: bash <<< "command", sh <<< 'command'
-if echo "$COMMAND" | grep -qE '(bash|sh|zsh|dash|ksh)\s+<<<\s' 2>/dev/null; then
+if echo "$COMMAND" | grep -qE '(^|[^[:alnum:]_.-])(bash|sh|zsh|dash|ksh)\s+<<<\s' 2>/dev/null; then
   is_allowed "here-exec" || block "Here-string feeds content directly to a shell interpreter, bypassing safety checks." "Run the command directly instead of via here-string. Or add 'allow: here-exec' to .bash-guard."
 fi
 
 # Here-doc: bash << EOF, sh << 'DELIM', bash <<-EOF (with indent stripping)
-if echo "$COMMAND" | grep -qE "(bash|sh|zsh|dash|ksh)\s+<<-?\s*['\"]?[A-Za-z_]" 2>/dev/null; then
+if echo "$COMMAND" | grep -qE "(^|[^[:alnum:]_.-])(bash|sh|zsh|dash|ksh)\s+<<-?\s*['\"]?[A-Za-z_]" 2>/dev/null; then
   is_allowed "here-exec" || block "Here-document feeds content directly to a shell interpreter, bypassing safety checks." "Run the commands directly instead of via here-doc. Or add 'allow: here-exec' to .bash-guard."
 fi
 
@@ -518,7 +665,7 @@ if echo "$COMMAND" | grep -qE '(base64\s+(-d|--decode|-D)|openssl\s+(base64|enc)
 fi
 
 # base64 decode via command substitution to shell
-if echo "$COMMAND" | grep -qE '(bash|sh|zsh)\s+-c\s.*\$\(.*base64\s+(-d|--decode|-D)' 2>/dev/null; then
+if echo "$COMMAND" | grep -qE '(^|[^[:alnum:]_.-])(bash|sh|zsh)\s+-c\s.*\$\(.*base64\s+(-d|--decode|-D)' 2>/dev/null; then
   is_allowed "decode-exec" || block "Executing base64-decoded content via command substitution bypasses all safety checks." "Decode to a file first, review it, then run it. Or add 'allow: decode-exec' to .bash-guard."
 fi
 
@@ -533,7 +680,7 @@ if echo "$COMMAND" | grep -qE "printf\s+['\"]\\\\(x[0-9a-fA-F]|[0-7]{3}).*\|.*\s
 fi
 
 # Process substitution with network downloads: bash <(curl ...) or sh <(wget ...)
-if echo "$COMMAND" | grep -qE '(bash|sh|zsh|dash|ksh)\s+<\(\s*(curl|wget)\s' 2>/dev/null; then
+if echo "$COMMAND" | grep -qE '(^|[^[:alnum:]_.-])(bash|sh|zsh|dash|ksh)\s+<\(\s*(curl|wget)\s' 2>/dev/null; then
   is_allowed "pipe-to-shell" || block "Process substitution downloads and executes code without saving it for review." "Download the script first, review it, then run it. Or add 'allow: pipe-to-shell' to .bash-guard."
 fi
 
