@@ -1296,7 +1296,10 @@ RESTORE_AT_RISK=""
 restore_loses_nothing() {
   local line words=() n i token staged=0 worktree=0 source=0 end_opts=0 paths=() changed
   [ "$UNRESOLVED_TARGET" = "0" ] || return 1
-  [ ${#TARGET_DIRS[@]} -eq 1 ] || return 1
+  # A Git call in the payload cwd lists that directory twice.
+  for token in "${TARGET_DIRS[@]}"; do
+    [ "$token" = "${TARGET_DIRS[0]}" ] || return 1
+  done
   # A second segment could change files after this check runs.
   [ "$(printf '%s\n' "$segments" | grep -c .)" -eq $((1 + SAFE_CD_CHAIN)) ] || return 1
   line=$(printf '%s\n' "$segments" | grep . | sed -n '$p')
