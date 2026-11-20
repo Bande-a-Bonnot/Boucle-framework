@@ -9,6 +9,7 @@
 #   - git checkout <ref> -- <path> (overwrites files from ref)
 #   - git restore without --staged (discards working tree changes)
 #   - git restore --source / -s (overwrites from arbitrary ref)
+#     (both allowed when the restored paths have nothing to lose)
 #   - git clean -f (deletes untracked files permanently)
 #   - git branch -D (force-deletes unmerged branches)
 #   - git stash drop / clear (permanently deletes stashed work)
@@ -1280,17 +1281,107 @@ if matches_git_command 'git\s+checkout\s+[^-][^ ]*\s+--\s'; then
   is_allowed "checkout ref --" || block "git checkout <ref> -- <path> overwrites working tree files with the version from that ref, discarding local changes." "Commit or stash changes first, or add 'allow: checkout ref --' to .git-safe."
 fi
 
+# Read-only Git query in the restore target. Repository config must not run
+# programs here, and optional index refreshes must not write.
+restore_git() {
+  env -u GIT_DIR -u GIT_WORK_TREE -u GIT_OBJECT_DIRECTORY GIT_OPTIONAL_LOCKS=0 \
+    git -C "${TARGET_DIRS[0]}" -c core.fsmonitor=false "$@" 2>/dev/null
+}
+
+# Succeeds when a lone `git restore` (optionally after one `cd dir &&`) in one
+# resolved repository would not discard anything Git cannot give back.
+# Sets RESTORE_AT_RISK when it found changes the restore would discard.
+# Anything it cannot parse returns failure with RESTORE_AT_RISK empty.
+RESTORE_AT_RISK=""
+restore_loses_nothing() {
+  local line words=() n i token staged=0 worktree=0 source=0 end_opts=0 paths=() changed
+  [ "$UNRESOLVED_TARGET" = "0" ] || return 1
+  [ ${#TARGET_DIRS[@]} -eq 1 ] || return 1
+  # A second segment could change files after this check runs.
+  [ "$(printf '%s\n' "$segments" | grep -c .)" -eq $((1 + SAFE_CD_CHAIN)) ] || return 1
+  line=$(printf '%s\n' "$segments" | grep . | sed -n '$p')
+  read -r -a words <<< "$line"
+  n=${#words[@]}
+  [ "$n" -gt 2 ] || return 1
+  is_git_binary_token "${words[0]}" || return 1
+  i=1
+  # Only -C is understood. Other global options can change the repository.
+  while [ "${words[$i]:-}" = "-C" ]; do i=$((i + 2)); done
+  [ "${words[$i]:-}" = "restore" ] || return 1
+  i=$((i + 1))
+  while [ "$i" -lt "$n" ]; do
+    token="${words[$i]}"
+    i=$((i + 1))
+    if [ "$end_opts" = "0" ]; then
+      case "$token" in
+        --) end_opts=1; continue ;;
+        -S|--staged) staged=1; continue ;;
+        -W|--worktree) worktree=1; continue ;;
+        -q|--quiet|--progress|--no-progress) continue ;;
+        -s|--source)
+          [ "$i" -lt "$n" ] || return 1
+          i=$((i + 1))
+          source=1
+          continue ;;
+        -s?*|--source=*) source=1; continue ;;
+        -*) return 1 ;;
+      esac
+    fi
+    # The shell expands braces, tildes and brackets before Git sees them.
+    [[ "$token" =~ ^[A-Za-z0-9_./@+=:*?-]+$ ]] || return 1
+    case "$token" in *__GIT_SAFE_*) return 1 ;; esac
+    paths+=("$token")
+  done
+  [ ${#paths[@]} -gt 0 ] || return 1
+  [ "$staged" = "1" ] || worktree=1
+
+  local at_risk=""
+  if [ "$worktree" = "1" ]; then
+    changed=$(restore_git diff --name-only --no-ext-diff --no-textconv -- "${paths[@]}") || return 1
+    at_risk="$at_risk"$'\n'"$changed"
+  fi
+  # Restoring the index from HEAD or another commit drops staged changes.
+  if [ "$staged" = "1" ] || [ "$source" = "1" ]; then
+    changed=$(restore_git diff --cached --name-only --no-ext-diff --no-textconv -- "${paths[@]}") || return 1
+    at_risk="$at_risk"$'\n'"$changed"
+  fi
+  # Restoring the working tree from a commit overwrites untracked and ignored
+  # files at paths that exist in that commit. git diff cannot see them.
+  if [ "$worktree" = "1" ] && [ "$source" = "1" ]; then
+    changed=$(restore_git ls-files --others --directory -- "${paths[@]}") || return 1
+    [ -z "$changed" ] || at_risk="$at_risk"$'\n'"(untracked or ignored files)"
+  fi
+  RESTORE_AT_RISK=$(printf '%s\n' "$at_risk" | awk 'NF' | sort -u | paste -s -d ',' - | sed 's/,/, /g')
+  [ -z "$RESTORE_AT_RISK" ]
+}
+
 # git restore (various destructive forms)
 if matches_git_command 'git\s+restore\s'; then
-  # Always block --source/-s (restoring from arbitrary ref)
+  restore_op=""
+  # --source/-s restores from an arbitrary ref
   if matches_git_command '(--source|-s\s)'; then
-    is_allowed "restore --source" || block "git restore --source overwrites files from a specific ref, discarding local changes." "Commit or stash first, or add 'allow: restore --source' to .git-safe."
-  # Block --worktree/-W (explicitly discards working tree)
+    restore_op="restore --source"
+    restore_reason="git restore --source overwrites files from a specific ref, discarding local changes."
+    restore_hint="Commit or stash first, or add 'allow: restore --source' to .git-safe."
+  # --worktree/-W explicitly restores the working tree
   elif matches_git_command '(--worktree|-W\b)'; then
-    is_allowed "restore" || block "git restore --worktree discards uncommitted working tree changes." "Commit or stash first, or add 'allow: restore' to .git-safe."
-  # Block if no --staged flag (default = working tree restore = destructive)
+    restore_op="restore"
+    restore_reason="git restore --worktree discards uncommitted working tree changes."
+    restore_hint="Commit or stash first, or add 'allow: restore' to .git-safe."
+  # Without --staged, restore writes to the working tree
   elif ! matches_git_command '\-\-staged'; then
-    is_allowed "restore" || block "git restore without --staged discards uncommitted working tree changes." "Use git restore --staged to unstage only, or commit/stash first. Add 'allow: restore' to .git-safe."
+    restore_op="restore"
+    restore_reason="git restore without --staged discards uncommitted working tree changes."
+    restore_hint="Use git restore --staged to unstage only, or commit/stash first. Add 'allow: restore' to .git-safe."
+  fi
+  if [ -n "$restore_op" ] && ! is_allowed "$restore_op"; then
+    if restore_loses_nothing; then
+      log "ALLOW: git restore would not discard any changes"
+    elif [ -n "$RESTORE_AT_RISK" ]; then
+      block "git restore would discard changes in: $RESTORE_AT_RISK." "Commit or stash those changes first, or add 'allow: $restore_op' to .git-safe."
+    else
+      block "$restore_reason" "$restore_hint"
+    fi
   fi
 fi
 

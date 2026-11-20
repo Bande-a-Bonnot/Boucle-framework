@@ -32,6 +32,8 @@ curl -fsSL https://raw.githubusercontent.com/Bande-a-Bonnot/Boucle-framework/mai
 
 Force push to `main` or `master` is always blocked, even with an allowlist.
 
+`git restore` is allowed when it would not discard anything. git-safe checks the paths being restored for unstaged changes, staged changes the restore would drop, and, with `--source`, untracked or ignored files the restore would overwrite. This check only runs when `git restore` is the whole command, optionally after one `cd dir &&`. Anything else is blocked as in the table above.
+
 ## Configuration
 
 Create a `.git-safe` file to allow specific operations:
