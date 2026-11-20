@@ -213,9 +213,13 @@ restore_commit() {
 echo v1 > "$RESTORE_REPO/a.txt"
 echo v1 > "$RESTORE_REPO/b.txt"
 echo v1 > "$RESTORE_REPO/gone.txt"
-git -C "$RESTORE_REPO" add a.txt b.txt gone.txt
+echo v1 > "$RESTORE_REPO/ "
+mkdir -p "$RESTORE_REPO/dir" "$RESTORE_REPO/sub"
+echo v1 > "$RESTORE_REPO/dir/file.txt"
+echo v1 > "$RESTORE_REPO/sub/s.txt"
+git -C "$RESTORE_REPO" add a.txt b.txt gone.txt ' ' dir sub
 restore_commit -m one
-git -C "$RESTORE_REPO" rm -q gone.txt
+git -C "$RESTORE_REPO" rm -q -r gone.txt dir
 restore_commit -m two
 
 assert_allowed "restore of a clean file" \
@@ -273,6 +277,41 @@ assert_blocked_mentioning "restore --source over an untracked file" \
   "$(hook_input_at "git restore --source=HEAD~1 gone.txt" "$RESTORE_REPO")" "untracked"
 assert_allowed "plain restore of an untracked file, which Git refuses" \
   "$(hook_input_at "git restore gone.txt" "$RESTORE_REPO")"
+echo gone.txt >> "$RESTORE_REPO/.git/info/exclude"
+assert_blocked_mentioning "restore --source over an ignored file" \
+  "$(hook_input_at "git restore --source=HEAD~1 gone.txt" "$RESTORE_REPO")" "untracked or ignored"
+rm "$RESTORE_REPO/gone.txt"
+
+assert_blocked "restore with a shell glob, which can expand into options" \
+  "$(hook_input_at "git restore *.txt" "$RESTORE_REPO")"
+assert_blocked "restore with pathspec magic" \
+  "$(hook_input_at "git restore :/a.txt" "$RESTORE_REPO")"
+
+git -C "$RESTORE_REPO" update-index --assume-unchanged a.txt
+echo "hidden edit" > "$RESTORE_REPO/a.txt"
+assert_blocked "restore of an assume-unchanged file git diff does not report" \
+  "$(hook_input_at "git restore a.txt" "$RESTORE_REPO")"
+git -C "$RESTORE_REPO" update-index --no-assume-unchanged a.txt
+git -C "$RESTORE_REPO" checkout -q -- a.txt
+
+git -C "$RESTORE_REPO" config diff.relative true
+echo "root edit" > "$RESTORE_REPO/a.txt"
+assert_blocked_mentioning "restore outside the cwd with diff.relative set" \
+  "$(hook_input_at "git restore ../a.txt" "$RESTORE_REPO/sub")" "a.txt"
+git -C "$RESTORE_REPO" config --unset diff.relative
+git -C "$RESTORE_REPO" checkout -q -- a.txt
+
+echo "untracked notes" > "$RESTORE_REPO/dir"
+assert_blocked "restore --source through an untracked file where a directory goes" \
+  "$(hook_input_at "git restore --source=HEAD~1 -- dir/file.txt" "$RESTORE_REPO")"
+rm "$RESTORE_REPO/dir"
+assert_allowed "restore --source of a deleted directory with nothing in the way" \
+  "$(hook_input_at "git restore --source=HEAD~1 -- dir/file.txt" "$RESTORE_REPO")"
+
+echo "edit" > "$RESTORE_REPO/ "
+assert_blocked "restore . with an edited file named with a space" \
+  "$(hook_input_at "git restore ." "$RESTORE_REPO")"
+git -C "$RESTORE_REPO" checkout -q -- ' '
 assert_blocked "git clean -f" \
   '{"tool_name":"Bash","tool_input":{"command":"git clean -f"}}'
 assert_blocked "git clean -fd" \

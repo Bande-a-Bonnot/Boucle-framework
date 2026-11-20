@@ -1281,8 +1281,9 @@ if matches_git_command 'git\s+checkout\s+[^-][^ ]*\s+--\s'; then
   is_allowed "checkout ref --" || block "git checkout <ref> -- <path> overwrites working tree files with the version from that ref, discarding local changes." "Commit or stash changes first, or add 'allow: checkout ref --' to .git-safe."
 fi
 
-# Read-only Git query in the restore target. Repository config must not run
-# programs here, and optional index refreshes must not write.
+# Read-only Git query in the restore target. External diff, textconv and
+# fsmonitor are off, and optional index refreshes do not write. Clean filters
+# still run on changed files, as they do for git status.
 restore_git() {
   env -u GIT_DIR -u GIT_WORK_TREE -u GIT_OBJECT_DIRECTORY GIT_OPTIONAL_LOCKS=0 \
     git -C "${TARGET_DIRS[0]}" -c core.fsmonitor=false "$@" 2>/dev/null
@@ -1330,22 +1331,31 @@ restore_loses_nothing() {
         -*) return 1 ;;
       esac
     fi
-    # The shell expands braces, tildes and brackets before Git sees them.
-    [[ "$token" =~ ^[A-Za-z0-9_./@+=:*?-]+$ ]] || return 1
-    case "$token" in *__GIT_SAFE_*) return 1 ;; esac
+    # The shell expands globs, braces, tildes and brackets before Git sees
+    # them. A glob can even expand into restore options. A leading colon is
+    # pathspec magic, which the parent directory check below cannot follow.
+    [[ "$token" =~ ^[A-Za-z0-9_./@+=:-]+$ ]] || return 1
+    case "$token" in *__GIT_SAFE_*|:*) return 1 ;; esac
     paths+=("$token")
   done
   [ ${#paths[@]} -gt 0 ] || return 1
   [ "$staged" = "1" ] || worktree=1
 
-  local at_risk=""
+  # git diff skips assume-unchanged (lowercase tag) and skip-worktree (S)
+  # entries, but restore still overwrites them.
+  changed=$(restore_git ls-files -v -- "${paths[@]}") || return 1
+  if printf '%s\n' "$changed" | grep -q '^[a-zS] '; then
+    return 1
+  fi
+
+  local at_risk="" parent
   if [ "$worktree" = "1" ]; then
-    changed=$(restore_git diff --name-only --no-ext-diff --no-textconv -- "${paths[@]}") || return 1
+    changed=$(restore_git diff --name-only --no-relative --no-ext-diff --no-textconv -- "${paths[@]}") || return 1
     at_risk="$at_risk"$'\n'"$changed"
   fi
   # Restoring the index from HEAD or another commit drops staged changes.
   if [ "$staged" = "1" ] || [ "$source" = "1" ]; then
-    changed=$(restore_git diff --cached --name-only --no-ext-diff --no-textconv -- "${paths[@]}") || return 1
+    changed=$(restore_git diff --cached --name-only --no-relative --no-ext-diff --no-textconv -- "${paths[@]}") || return 1
     at_risk="$at_risk"$'\n'"$changed"
   fi
   # Restoring the working tree from a commit overwrites untracked and ignored
@@ -1353,8 +1363,23 @@ restore_loses_nothing() {
   if [ "$worktree" = "1" ] && [ "$source" = "1" ]; then
     changed=$(restore_git ls-files --others --directory -- "${paths[@]}") || return 1
     [ -z "$changed" ] || at_risk="$at_risk"$'\n'"(untracked or ignored files)"
+    # Git replaces a file or symlink that sits where the commit has a
+    # directory, and ls-files does not report it for paths beneath it.
+    for token in "${paths[@]}"; do
+      parent="${token%/}"
+      while [[ "$parent" == */* ]]; do
+        parent="${parent%/*}"
+        [ -n "$parent" ] || break
+        if [ -L "${TARGET_DIRS[0]}/$parent" ]; then
+          return 1
+        fi
+        if [ -e "${TARGET_DIRS[0]}/$parent" ] && [ ! -d "${TARGET_DIRS[0]}/$parent" ]; then
+          return 1
+        fi
+      done
+    done
   fi
-  RESTORE_AT_RISK=$(printf '%s\n' "$at_risk" | awk 'NF' | sort -u | paste -s -d ',' - | sed 's/,/, /g')
+  RESTORE_AT_RISK=$(printf '%s\n' "$at_risk" | awk 'length' | sort -u | paste -s -d ',' - | sed 's/,/, /g')
   [ -z "$RESTORE_AT_RISK" ]
 }
 
