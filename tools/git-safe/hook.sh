@@ -1294,6 +1294,12 @@ restore_git() {
 # Sets RESTORE_AT_RISK when it found changes the restore would discard.
 # Anything it cannot parse returns failure with RESTORE_AT_RISK empty.
 RESTORE_AT_RISK=""
+# A revision such as HEAD~1 that the shell passes to Git unchanged. A leading
+# tilde, or one after = or :, is tilde expansion.
+restore_literal_rev() {
+  [[ "$1" =~ ^[A-Za-z0-9_./@+=:-][A-Za-z0-9_./@+=:^~-]*$ ]] || return 1
+  case "$1" in *__GIT_SAFE_*|*=~*|*:~*) return 1 ;; esac
+}
 restore_loses_nothing() {
   local line words=() n i token staged=0 worktree=0 source=0 end_opts=0 paths=() changed
   [ "$UNRESOLVED_TARGET" = "0" ] || return 1
@@ -1324,10 +1330,12 @@ restore_loses_nothing() {
         -q|--quiet|--progress|--no-progress) continue ;;
         -s|--source)
           [ "$i" -lt "$n" ] || return 1
+          restore_literal_rev "${words[$i]}" || return 1
           i=$((i + 1))
           source=1
           continue ;;
-        -s?*|--source=*) source=1; continue ;;
+        -s?*) restore_literal_rev "${token#-s}" || return 1; source=1; continue ;;
+        --source=*) restore_literal_rev "${token#--source=}" || return 1; source=1; continue ;;
         -*) return 1 ;;
       esac
     fi
@@ -1344,7 +1352,13 @@ restore_loses_nothing() {
   # git diff skips assume-unchanged (lowercase tag) and skip-worktree (S)
   # entries, but restore still overwrites them.
   changed=$(restore_git ls-files -v -- "${paths[@]}") || return 1
-  if printf '%s\n' "$changed" | grep -q '^[a-zS] '; then
+  if grep -q '^[a-zS] ' <<< "$changed"; then
+    return 1
+  fi
+  # git diff can hide edits inside a submodule, and submodule.recurse makes
+  # restore overwrite them.
+  changed=$(restore_git ls-files -s -- "${paths[@]}") || return 1
+  if grep -q '^160000 ' <<< "$changed"; then
     return 1
   fi
 
@@ -1366,14 +1380,15 @@ restore_loses_nothing() {
     # Git replaces a file or symlink that sits where the commit has a
     # directory, and ls-files does not report it for paths beneath it.
     for token in "${paths[@]}"; do
+      case "$token" in /*) ;; *) token="${TARGET_DIRS[0]}/$token" ;; esac
       parent="${token%/}"
       while [[ "$parent" == */* ]]; do
         parent="${parent%/*}"
-        [ -n "$parent" ] || break
-        if [ -L "${TARGET_DIRS[0]}/$parent" ]; then
+        [ -n "$parent" ] && [ "$parent" != "${TARGET_DIRS[0]%/}" ] || break
+        if [ -L "$parent" ]; then
           return 1
         fi
-        if [ -e "${TARGET_DIRS[0]}/$parent" ] && [ ! -d "${TARGET_DIRS[0]}/$parent" ]; then
+        if [ -e "$parent" ] && [ ! -d "$parent" ]; then
           return 1
         fi
       done

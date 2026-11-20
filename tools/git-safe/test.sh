@@ -312,6 +312,31 @@ echo "edit" > "$RESTORE_REPO/ "
 assert_blocked "restore . with an edited file named with a space" \
   "$(hook_input_at "git restore ." "$RESTORE_REPO")"
 git -C "$RESTORE_REPO" checkout -q -- ' '
+
+echo "unsaved work" > "$RESTORE_REPO/b.txt"
+assert_blocked "restore --source with a brace expansion that adds a path" \
+  "$(hook_input_at "git restore --source {HEAD,b.txt} a.txt" "$RESTORE_REPO")"
+git -C "$RESTORE_REPO" checkout -q -- b.txt
+
+RESTORE_REAL=$(cd "$RESTORE_REPO" && pwd -P)
+echo "untracked notes" > "$RESTORE_REAL/dir"
+assert_blocked "restore --source of an absolute path through an untracked file" \
+  "$(hook_input_at "git restore --source=HEAD~1 -- $RESTORE_REAL/dir/file.txt" "$RESTORE_REAL")"
+rm "$RESTORE_REAL/dir"
+assert_allowed "restore --source of an absolute path with nothing in the way" \
+  "$(hook_input_at "git restore --source=HEAD~1 -- $RESTORE_REAL/dir/file.txt" "$RESTORE_REAL")"
+
+git init -q "$RESTORE_REPO/mod"
+echo v1 > "$RESTORE_REPO/mod/m.txt"
+git -C "$RESTORE_REPO/mod" add m.txt
+git -C "$RESTORE_REPO/mod" -c user.name=git-safe -c user.email=git-safe@example.invalid commit -q -m mod
+git -C "$RESTORE_REPO" -c advice.addEmbeddedRepo=false add mod
+restore_commit -m three
+echo "submodule edit" > "$RESTORE_REPO/mod/m.txt"
+git -C "$RESTORE_REPO" config submodule.recurse true
+git -C "$RESTORE_REPO" config diff.ignoreSubmodules all
+assert_blocked "restore of a submodule with hidden edits inside it" \
+  "$(hook_input_at "git restore mod" "$RESTORE_REPO")"
 assert_blocked "git clean -f" \
   '{"tool_name":"Bash","tool_input":{"command":"git clean -f"}}'
 assert_blocked "git clean -fd" \
