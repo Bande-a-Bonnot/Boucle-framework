@@ -743,6 +743,14 @@ assert_blocked "compiled program passed to a shell is still read" \
   "$(hook_input_at 'bash ./compiled-tool' "$TMPDIR/denied")"
 assert_blocked "compiled program sourced is still read" \
   "$(hook_input_at 'source ./compiled-tool' "$TMPDIR/denied")"
+assert_allowed "system program run by absolute path is not read as a script" \
+  "$(hook_input_at '/bin/echo probe' "$TMPDIR/denied")"
+assert_blocked "shell run by absolute path still reads its script" \
+  "$(hook_input_at '/bin/bash ./forbidden-script.sh' "$TMPDIR/denied")"
+assert_blocked "env run by absolute path still reads the script" \
+  "$(hook_input_at '/usr/bin/env bash ./forbidden-script.sh' "$TMPDIR/denied")"
+assert_blocked "sudo run by absolute path still reads the script" \
+  "$(hook_input_at '/usr/bin/sudo ./forbidden-script.sh' "$TMPDIR/denied")"
 assert_blocked "text file with a program header but no zero byte is read" \
   "$(hook_input_at './fake-compiled-tool' "$TMPDIR/denied")"
 assert_blocked "hashbang file with a zero byte is read" \

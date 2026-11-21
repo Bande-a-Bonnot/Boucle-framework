@@ -742,6 +742,8 @@ append_literal_script_contents() {
     while [ $i -lt ${#words[@]} ]; do
       token="${words[$i]}"
       if is_assignment_token "$token"; then i=$((i + 1)); continue; fi
+      # /usr/bin/env and /usr/bin/sudo wrap commands just as env and sudo do.
+      token="${token##*/}"
       case "$token" in
         env)
           i=$((i + 1))
@@ -844,7 +846,7 @@ append_literal_script_contents() {
     token="${words[$i]}"
     case "$token" in
       source|.) interpreter=1; path="${words[$((i + 1))]:-}" ;;
-      bash|sh|zsh|dash|ksh)
+      bash|sh|zsh|dash|ksh|*/bash|*/sh|*/zsh|*/dash|*/ksh)
         interpreter=1
         i=$((i + 1))
         while [ $i -lt ${#words[@]} ] && [[ "${words[$i]}" == [-+]* ]]; do
