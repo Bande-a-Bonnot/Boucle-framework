@@ -718,6 +718,21 @@ mark_opaque_segments() {
   done <<< "$1"
 }
 
+# Shells refuse to run a file as a script when a zero byte comes before its
+# first newline, and compiled programs have one in their first 8 bytes. A file
+# starting with #! goes to the interpreter it names instead, so it still counts
+# as a script.
+is_compiled_program() {
+  local hex
+  hex=$(od -An -v -tx1 -N8 "$1" 2>/dev/null | tr -d ' \n') || return 1
+  case "$hex" in 2321*) return 1 ;; esac
+  while [ -n "$hex" ]; do
+    case "$hex" in 00*) return 0 ;; 0a*) return 1 ;; esac
+    hex="${hex#??}"
+  done
+  return 1
+}
+
 append_literal_script_contents() {
   local segments="$1" depth="${2:-0}" segment words=() token path script_path script_body nested_segments seen i interpreter
   [ "$depth" -lt 16 ] || return 1
@@ -727,6 +742,8 @@ append_literal_script_contents() {
     while [ $i -lt ${#words[@]} ]; do
       token="${words[$i]}"
       if is_assignment_token "$token"; then i=$((i + 1)); continue; fi
+      # /usr/bin/env and /usr/bin/sudo wrap commands just as env and sudo do.
+      token="${token##*/}"
       case "$token" in
         env)
           i=$((i + 1))
@@ -829,7 +846,7 @@ append_literal_script_contents() {
     token="${words[$i]}"
     case "$token" in
       source|.) interpreter=1; path="${words[$((i + 1))]:-}" ;;
-      bash|sh|zsh|dash|ksh)
+      bash|sh|zsh|dash|ksh|*/bash|*/sh|*/zsh|*/dash|*/ksh)
         interpreter=1
         i=$((i + 1))
         while [ $i -lt ${#words[@]} ] && [[ "${words[$i]}" == [-+]* ]]; do
@@ -860,6 +877,9 @@ append_literal_script_contents() {
         script_path="$PAYLOAD_CWD/$path"
       fi
       [ -f "$script_path" ] || return 1
+      if [ "$interpreter" = "0" ] && is_compiled_program "$script_path"; then
+        continue
+      fi
       seen=""
       for seen in "${SCRIPT_SEEN[@]}"; do
         [ "$seen" != "$script_path" ] || break

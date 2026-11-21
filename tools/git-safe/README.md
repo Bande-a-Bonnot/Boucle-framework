@@ -67,7 +67,8 @@ checked too, including substitutions in unquoted here-doc bodies. Literal
 examples in single-quoted arguments and quoted here-doc bodies remain inert.
 Literal shell scripts (`bash script.sh`, `./script.sh`, and `source script.sh`)
 are read and checked before execution; they are blocked only when their content
-contains a guarded Git operation. Runtime-selected shell programs remain denied
+contains a guarded Git operation. Compiled programs run by path, such as
+`./tool`, are not read, because no shell will run them as a script. Runtime-selected shell programs remain denied
 because their content cannot be inspected safely before execution.
 Shell quotes around literal executable names, Git options, and Git environment
 assignments are removed for inspection. If an executable is selected by an

@@ -732,6 +732,29 @@ assert_blocked "script on a later line cannot hide hard reset" \
   "$(hook_input_at $'echo safe\n./forbidden-script.sh' "$TMPDIR/denied")"
 assert_blocked "nested script cannot hide hard reset" \
   "$(hook_input_at 'bash ./nested-script.sh' "$TMPDIR/denied")"
+printf '\xcf\xfa\xed\xfe\x0c\x00\x00\x01\ngit reset --hard\n' > "$TMPDIR/denied/compiled-tool"
+printf '\xcf\xfa\xed\xfe\ngit reset --hard\n' > "$TMPDIR/denied/fake-compiled-tool"
+printf '#!sh\x00\ngit reset --hard\n' > "$TMPDIR/denied/nul-hashbang-script"
+assert_allowed "compiled program run by relative path is not read as a script" \
+  "$(hook_input_at './compiled-tool -ct input' "$TMPDIR/denied")"
+assert_allowed "compiled program run by absolute path is not read as a script" \
+  "$(hook_input_at "$TMPDIR/denied/compiled-tool -ct input" "$TMPDIR")"
+assert_blocked "compiled program passed to a shell is still read" \
+  "$(hook_input_at 'bash ./compiled-tool' "$TMPDIR/denied")"
+assert_blocked "compiled program sourced is still read" \
+  "$(hook_input_at 'source ./compiled-tool' "$TMPDIR/denied")"
+assert_allowed "system program run by absolute path is not read as a script" \
+  "$(hook_input_at '/bin/echo probe' "$TMPDIR/denied")"
+assert_blocked "shell run by absolute path still reads its script" \
+  "$(hook_input_at '/bin/bash ./forbidden-script.sh' "$TMPDIR/denied")"
+assert_blocked "env run by absolute path still reads the script" \
+  "$(hook_input_at '/usr/bin/env bash ./forbidden-script.sh' "$TMPDIR/denied")"
+assert_blocked "sudo run by absolute path still reads the script" \
+  "$(hook_input_at '/usr/bin/sudo ./forbidden-script.sh' "$TMPDIR/denied")"
+assert_blocked "text file with a program header but no zero byte is read" \
+  "$(hook_input_at './fake-compiled-tool' "$TMPDIR/denied")"
+assert_blocked "hashbang file with a zero byte is read" \
+  "$(hook_input_at './nul-hashbang-script' "$TMPDIR/denied")"
 assert_allowed "quoted here-doc body mentioning a script is literal data" \
   "$(hook_input_at "cat <<'EOF'
 ./forbidden-script.sh
