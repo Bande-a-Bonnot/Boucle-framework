@@ -187,6 +187,156 @@ assert_allowed "git restore --staged file.js (safe: just unstages)" \
   '{"tool_name":"Bash","tool_input":{"command":"git restore --staged file.js"}}'
 assert_allowed "git restore --staged . (safe: just unstages)" \
   '{"tool_name":"Bash","tool_input":{"command":"git restore --staged ."}}'
+
+# --- git restore that would not discard anything ---
+echo ""
+echo "Restore checks the target repository:"
+
+assert_blocked_mentioning() {
+  local desc="$1" input="$2" expected="$3" stderr rc
+  TOTAL=$((TOTAL + 1))
+  if stderr=$(echo "$input" | bash "$HOOK" 2>&1 >/dev/null); then rc=0; else rc=$?; fi
+  if [ "$rc" -eq 2 ] && printf '%s\n' "$stderr" | grep -qF -- "$expected"; then
+    PASS=$((PASS + 1))
+    echo -e "  ${GREEN}PASS${NC}: $desc"
+  else
+    FAIL=$((FAIL + 1))
+    echo -e "  ${RED}FAIL${NC}: $desc (expected rc=2 mentioning '$expected', got rc=$rc stderr='$stderr')"
+  fi
+}
+
+RESTORE_REPO="$TMPDIR/restore-repo"
+git init -q "$RESTORE_REPO"
+restore_commit() {
+  git -C "$RESTORE_REPO" -c user.name=git-safe -c user.email=git-safe@example.invalid commit -q "$@"
+}
+echo v1 > "$RESTORE_REPO/a.txt"
+echo v1 > "$RESTORE_REPO/b.txt"
+echo v1 > "$RESTORE_REPO/gone.txt"
+echo v1 > "$RESTORE_REPO/ "
+mkdir -p "$RESTORE_REPO/dir" "$RESTORE_REPO/sub"
+echo v1 > "$RESTORE_REPO/dir/file.txt"
+echo v1 > "$RESTORE_REPO/sub/s.txt"
+git -C "$RESTORE_REPO" add a.txt b.txt gone.txt ' ' dir sub
+restore_commit -m one
+git -C "$RESTORE_REPO" rm -q -r gone.txt dir
+restore_commit -m two
+
+assert_allowed "restore of a clean file" \
+  "$(hook_input_at "git restore a.txt" "$RESTORE_REPO")"
+assert_allowed "restore . in a clean repository" \
+  "$(hook_input_at "git restore ." "$RESTORE_REPO")"
+assert_allowed "restore --worktree of a clean file" \
+  "$(hook_input_at "git restore --worktree -- a.txt" "$RESTORE_REPO")"
+assert_allowed "restore --staged --worktree of a clean file" \
+  "$(hook_input_at "git restore --staged --worktree a.txt" "$RESTORE_REPO")"
+assert_allowed "restore --source of a clean file" \
+  "$(hook_input_at "git restore --source=HEAD~1 a.txt" "$RESTORE_REPO")"
+assert_allowed "restore -s of a clean file" \
+  "$(hook_input_at "git restore -s HEAD a.txt" "$RESTORE_REPO")"
+assert_allowed "git -C restore checks the -C repository" \
+  "$(hook_input_at "git -C $RESTORE_REPO restore a.txt" "$TEST_CWD")"
+assert_allowed "cd && restore checks the cd repository" \
+  "$(hook_input_at "cd $RESTORE_REPO && git restore a.txt" "$TEST_CWD")"
+
+assert_blocked "restore after another command that could edit the file" \
+  "$(hook_input_at "echo x > b.txt && git restore b.txt" "$RESTORE_REPO")"
+assert_blocked "restore with shell brace expansion" \
+  "$(hook_input_at "git restore {a,b}.txt" "$RESTORE_REPO")"
+assert_blocked "restore with a global option other than -C" \
+  "$(hook_input_at "git -c core.worktree=/tmp restore a.txt" "$RESTORE_REPO")"
+assert_blocked "restore with an option the check does not model" \
+  "$(hook_input_at "git restore --ours a.txt" "$RESTORE_REPO")"
+assert_blocked "restore with paths read from a file" \
+  "$(hook_input_at "git restore --pathspec-from-file=list.txt" "$RESTORE_REPO")"
+
+echo "unsaved work" > "$RESTORE_REPO/a.txt"
+assert_blocked_mentioning "restore of a file with unstaged edits names it" \
+  "$(hook_input_at "git restore a.txt" "$RESTORE_REPO")" "a.txt"
+assert_blocked "restore . with an edited file" \
+  "$(hook_input_at "git restore ." "$RESTORE_REPO")"
+assert_blocked "restore glob matching an edited file" \
+  "$(hook_input_at "git restore *.txt" "$RESTORE_REPO")"
+assert_allowed "restore of a clean file while another file is edited" \
+  "$(hook_input_at "git restore b.txt" "$RESTORE_REPO")"
+git -C "$RESTORE_REPO" checkout -q -- a.txt
+
+echo "staged work" > "$RESTORE_REPO/b.txt"
+git -C "$RESTORE_REPO" add b.txt
+assert_blocked_mentioning "restore --staged --worktree of a staged edit names it" \
+  "$(hook_input_at "git restore --staged --worktree b.txt" "$RESTORE_REPO")" "b.txt"
+assert_blocked "restore --source of a staged edit" \
+  "$(hook_input_at "git restore --source=HEAD b.txt" "$RESTORE_REPO")"
+assert_allowed "restore --staged alone still only unstages" \
+  "$(hook_input_at "git restore --staged b.txt" "$RESTORE_REPO")"
+git -C "$RESTORE_REPO" reset -q
+git -C "$RESTORE_REPO" checkout -q -- b.txt
+
+echo "untracked notes" > "$RESTORE_REPO/gone.txt"
+assert_blocked_mentioning "restore --source over an untracked file" \
+  "$(hook_input_at "git restore --source=HEAD~1 gone.txt" "$RESTORE_REPO")" "untracked"
+assert_allowed "plain restore of an untracked file, which Git refuses" \
+  "$(hook_input_at "git restore gone.txt" "$RESTORE_REPO")"
+echo gone.txt >> "$RESTORE_REPO/.git/info/exclude"
+assert_blocked_mentioning "restore --source over an ignored file" \
+  "$(hook_input_at "git restore --source=HEAD~1 gone.txt" "$RESTORE_REPO")" "untracked or ignored"
+rm "$RESTORE_REPO/gone.txt"
+
+assert_blocked "restore with a shell glob, which can expand into options" \
+  "$(hook_input_at "git restore *.txt" "$RESTORE_REPO")"
+assert_blocked "restore with pathspec magic" \
+  "$(hook_input_at "git restore :/a.txt" "$RESTORE_REPO")"
+
+git -C "$RESTORE_REPO" update-index --assume-unchanged a.txt
+echo "hidden edit" > "$RESTORE_REPO/a.txt"
+assert_blocked "restore of an assume-unchanged file git diff does not report" \
+  "$(hook_input_at "git restore a.txt" "$RESTORE_REPO")"
+git -C "$RESTORE_REPO" update-index --no-assume-unchanged a.txt
+git -C "$RESTORE_REPO" checkout -q -- a.txt
+
+git -C "$RESTORE_REPO" config diff.relative true
+echo "root edit" > "$RESTORE_REPO/a.txt"
+assert_blocked_mentioning "restore outside the cwd with diff.relative set" \
+  "$(hook_input_at "git restore ../a.txt" "$RESTORE_REPO/sub")" "a.txt"
+git -C "$RESTORE_REPO" config --unset diff.relative
+git -C "$RESTORE_REPO" checkout -q -- a.txt
+
+echo "untracked notes" > "$RESTORE_REPO/dir"
+assert_blocked "restore --source through an untracked file where a directory goes" \
+  "$(hook_input_at "git restore --source=HEAD~1 -- dir/file.txt" "$RESTORE_REPO")"
+rm "$RESTORE_REPO/dir"
+assert_allowed "restore --source of a deleted directory with nothing in the way" \
+  "$(hook_input_at "git restore --source=HEAD~1 -- dir/file.txt" "$RESTORE_REPO")"
+
+echo "edit" > "$RESTORE_REPO/ "
+assert_blocked "restore . with an edited file named with a space" \
+  "$(hook_input_at "git restore ." "$RESTORE_REPO")"
+git -C "$RESTORE_REPO" checkout -q -- ' '
+
+echo "unsaved work" > "$RESTORE_REPO/b.txt"
+assert_blocked "restore --source with a brace expansion that adds a path" \
+  "$(hook_input_at "git restore --source {HEAD,b.txt} a.txt" "$RESTORE_REPO")"
+git -C "$RESTORE_REPO" checkout -q -- b.txt
+
+RESTORE_REAL=$(cd "$RESTORE_REPO" && pwd -P)
+echo "untracked notes" > "$RESTORE_REAL/dir"
+assert_blocked "restore --source of an absolute path through an untracked file" \
+  "$(hook_input_at "git restore --source=HEAD~1 -- $RESTORE_REAL/dir/file.txt" "$RESTORE_REAL")"
+rm "$RESTORE_REAL/dir"
+assert_allowed "restore --source of an absolute path with nothing in the way" \
+  "$(hook_input_at "git restore --source=HEAD~1 -- $RESTORE_REAL/dir/file.txt" "$RESTORE_REAL")"
+
+git init -q "$RESTORE_REPO/mod"
+echo v1 > "$RESTORE_REPO/mod/m.txt"
+git -C "$RESTORE_REPO/mod" add m.txt
+git -C "$RESTORE_REPO/mod" -c user.name=git-safe -c user.email=git-safe@example.invalid commit -q -m mod
+git -C "$RESTORE_REPO" -c advice.addEmbeddedRepo=false add mod
+restore_commit -m three
+echo "submodule edit" > "$RESTORE_REPO/mod/m.txt"
+git -C "$RESTORE_REPO" config submodule.recurse true
+git -C "$RESTORE_REPO" config diff.ignoreSubmodules all
+assert_blocked "restore of a submodule with hidden edits inside it" \
+  "$(hook_input_at "git restore mod" "$RESTORE_REPO")"
 assert_blocked "git clean -f" \
   '{"tool_name":"Bash","tool_input":{"command":"git clean -f"}}'
 assert_blocked "git clean -fd" \
